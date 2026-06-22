@@ -1,0 +1,59 @@
+packages:
+  - '02-artifacts-api-server-db/artifacts/api-server'
+  - '07-lib-misc/lib/db'
+  - '.merged/api-zod'
+  - '07-lib-misc/lib/api-spec'
+  - '07-lib-misc/lib/api-client-react'
+  - '03-artifacts-admin-portal/artifacts/admin-portal'
+  - '04-artifacts-mockup-sandbox/artifacts/mockup-sandbox'
+  - '05-artifacts-nextrade-part1/artifacts/nextrade'
+
+catalog:
+  '@replit/vite-plugin-cartographer': ^0.5.1
+  '@replit/vite-plugin-dev-banner': ^0.1.1
+  '@replit/vite-plugin-runtime-error-modal': ^0.0.6
+  '@tailwindcss/vite': ^4.1.14
+  '@tanstack/react-query': ^5.90.21
+  '@types/node': ^25.3.3
+  '@types/react': ^19.2.0
+  '@types/react-dom': ^19.2.0
+  '@vitejs/plugin-react': ^5.0.4
+  class-variance-authority: ^0.7.1
+  clsx: ^2.1.1
+  drizzle-orm: ^0.45.2
+  framer-motion: ^12.23.24
+  lucide-react: ^0.545.0
+  react: 19.1.0
+  react-dom: 19.1.0
+  tailwind-merge: ^3.3.1
+  tailwindcss: ^4.1.14
+  tsx: ^4.21.0
+  vite: ^7.3.2
+  zod: ^3.25.76
+
+autoInstallPeers: false
+
+onlyBuiltDependencies:
+  - '@swc/core'
+  - esbuild
+  - msw
+  - unrs-resolver
+
+overrides:
+  esbuild: "0.27.3"
+  "micromatch>picomatch": "2.3.2"
+  "vite>picomatch": "4.0.4"
+  "router>path-to-regexp": "8.4.0"
+  lodash: "4.18.1"
+  yaml: "2.8.3"
+  "minimatch>brace-expansion": "2.0.3"
+  postcss: "8.5.10"
+  "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
+  "esbuild>@esbuild/darwin-arm64": "-"
+  "esbuild>@esbuild/darwin-x64": "-"
+  "esbuild>@esbuild/linux-arm": "-"
+  "esbuild>@esbuild/linux-arm64": "-"
+  "esbuild>@esbuild/linux-ia32": "-"
+  "esbuild>@esbuild/win32-arm64": "-"
+  "esbuild>@esbuild/win32-ia32": "-"
+  "esbuild>@esbuild/win32-x64": "-"

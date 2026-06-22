@@ -1,5 +1,16 @@
+modules = ["nodejs-20"]
 [nix]
 channel = "stable-25_05"
 
 [agent]
 expertMode = true
+
+[userenv]
+
+[userenv.shared]
+PORT = "8080"
+LOG_LEVEL = "info"
+APP_NAME = "XpressProFx.com"
+ALLOWED_ORIGINS = "https://xpressprofx.com,https://www.xpressprofx.com"
+NODE_ENV = "development"
+COREPACK_ENABLE_STRICT = "0"

@@ -1,0 +1,111 @@
+# Task: Fix Replit preview, link dual GitHub remotes, and harden for real production use
+
+## ABSOLUTE BOUNDARY — READ THIS FIRST
+
+You must NOT modify, refactor, “clean up,” or touch in any way:
+
+- Any file under `artifacts/*/src/routes/`
+- Any file under `artifacts/*/src/controllers/` (or equivalent route-handler logic, wherever it lives)
+- Any admin-specific logic, admin routes, admin auth/permission checks, or admin UI behavior
+- Any business logic governing balances, withdrawals, deposits, KYC, P2P matching, or wallet operations
+
+You MAY read these files to diagnose problems. You may NOT write to them under any circumstance in this task, even if you believe a small change would “fix” something. If you find a real bug inside one of these restricted files, STOP and report it to me with the exact file, line, and problem — do not patch it yourself. Everything else in this task (config, middleware, env handling, build/deploy scripts, CORS, logging, health checks) is in scope to modify.
+
+Before you finish this task, list every file you touched and confirm none of them fall inside the restricted list above.
+
+## Step 0 — Diagnose the actual preview failure (do this first, don’t skip to a fix)
+
+Replit’s preview, when clicked, returns:
+
+```
+{"status":"error","message":"this route doesn't exist"}
+```
+
+This is almost certainly your own Express app’s 404 handler responding — meaning the server process IS running and IS responding to HTTP requests. This is a different failure mode than the earlier Railway “Application failed to respond” crash (which was the process not running at all). Do not assume it’s the same root cause.
+
+Investigate and report back, with evidence, on:
+
+1. What URL/path is Replit’s preview actually requesting? (Check the Replit webview’s configured port and path — Replit often expects the app on a specific port, commonly read from `process.env.PORT`, and expects a response at `/`, not just at `/healthz`.)
+1. Does your Express app have a route registered at `/` (the root path)? If the only routes are under `/api/*` and there’s nothing serving `/`, that would exactly produce this 404 on preview while `/healthz` or `/api/...` work fine.
+1. Is the app correctly binding to `0.0.0.0` and the port Replit expects, not just `localhost`/`127.0.0.1`? Replit’s preview proxy requires binding to `0.0.0.0`.
+1. Report the exact route table (every registered path) so I can see what does and doesn’t exist.
+   Do not fix this by modifying any route file (see boundary above). If the fix requires adding a root `/` handler or fixing the port/host binding, that’s a config/entrypoint-level fix (e.g. in `index.ts`’s `app.listen()` call or a non-route middleware file) — implement it there, not inside the restricted routes/controllers.
+
+## Step 1 — Cross-check against everything already built
+
+Before changing anything:
+
+- Read the full current state of `01-root-and-misc/railpack.toml`, `render.yaml`, `ecosystem.config.cjs`, `deploy.sh`, `scripts/predeploy.mjs`, `vercel.json`, `.env.example`, `src/lib/env.ts`, and `src/app.ts` (CORS section only) — these were already correctly built in a prior session. Confirm they are still intact and unmodified by anything else that’s happened since.
+- Confirm the previously-implemented resilience features are still present and untouched: graceful shutdown (SIGTERM/SIGINT), uncaughtException/unhandledRejection handlers, `withRetry` in `lib/retry.ts`, DB pool error recovery in `lib/db-client.ts`.
+- Report file count before you start (same method as before: total files in repo) so we can verify nothing is silently lost or duplicated by the end.
+
+## Step 2 — Set up dual GitHub remotes
+
+I want this Replit project connected to GitHub account `anzalopez57-del` (currently empty, no existing repo) AND have every push/commit also reach the existing repo at `https://github.com/alfredgrace904-ops/Rebranded-xpfx.git` (which already contains this project, unclean, and needs this same fix applied to it).
+
+Important: git does not push to two remotes automatically forever as some invisible background behavior — you need to set up two named remotes (e.g. `origin` pointing at anzalopez57-del’s new repo, and a second remote, e.g. `upstream-alfred`, pointing at the alfredgrace904-ops repo), and either:
+(a) configure `origin` with multiple push URLs so one `git push` sends to both, or
+(b) document that two explicit push commands are needed (`git push origin main && git push upstream-alfred main`).
+Pick whichever is more reliable given Replit’s git integration, and explain clearly which one you chose and why.
+
+Tell me explicitly, step by step, anything I need to do manually on my end — for example: creating a Personal Access Token for one or both GitHub accounts, authorizing Replit’s GitHub integration for `anzalopez57-del` specifically (since Replit may currently be authorized for a different account), or any permission/collaborator access needed on the alfredgrace904-ops repo if it’s not yours.
+
+Flag clearly: once both repos are linked, if anyone ever pushes directly to the alfredgrace904-ops repo outside of Replit (e.g. via GitHub’s web upload like in our earlier sessions), the two repos can drift out of sync. Tell me how to detect that if it happens.
+
+## Step 3 — Env vars: tell me what to enter, do not invent values
+
+Before treating this project as production-ready, you must have me supply real values for the following. Do NOT generate placeholder/fake values and treat the build as done — these need my actual input:
+
+```
+SESSION_SECRET=
+SENDGRID_API_KEY=
+ADMIN_EMAIL=
+AI_INTEGRATIONS_OPENAI_BASE_URL=
+AI_INTEGRATIONS_OPENAI_API_KEY=
+ALCHEMY_API_KEY=
+ADMIN_NOTIFY_EMAIL=
+DATABASE_URL=
+JWT_SECRET=
+ALLOWED_ORIGINS="https://xpressprofx.com,https://www.xpressprofx.com"
+APP_NAME="XpressProFx.com"
+LOG_LEVEL="info"
+```
+
+Note: I’m flagging this myself before you even look — the `APP_NAME` line I gave you has a typo-looking trailing `cc` after the closing quote in my original draft. The correct value is `APP_NAME="XpressProFx.com"` with nothing after the closing quote. Use the corrected version.
+
+For each variable, tell me:
+
+- Whether it’s already set in Replit Secrets right now (check, don’t assume)
+- What happens if it’s left blank in production (does the app fail to start, or silently degrade — e.g. SESSION_SECRET missing in production should hard-fail per the existing predeploy script)
+- Where I generate/obtain a real value if I don’t have one yet (e.g. SESSION_SECRET via a crypto-random command, JWT_SECRET similarly, ALCHEMY_API_KEY from Alchemy’s dashboard)
+
+Walk me through entering these into Replit Secrets specifically, and tell me which ones also need to be set separately in Railway/Render/VPS dashboards (since Replit Secrets do not automatically sync to other platforms).
+
+## Step 4 — Real production hardening, not UI-only
+
+This must be functionally production-ready, not a styled mockup. Within the boundary in Step 0 (no route/controller/admin/business-logic edits), verify and report on:
+
+- Does every mutating endpoint actually validate input with zod, or are there gaps? (Report gaps, do not silently add validation inside restricted files — tell me what’s missing instead.)
+- Is rate limiting actually active in production mode, or only configured but not wired in?
+- Is the DB connection pool actually used for persistence, or does data still silently fall back to in-memory-only in any path where it shouldn’t?
+- Are there any hardcoded secrets, API keys, or credentials anywhere in the codebase? Search and report every match, do not just claim “none found” without showing the search performed.
+- Run a real dependency vulnerability scan (`pnpm audit` or equivalent) and report actual findings — high/critical vulnerabilities specifically. Fix vulnerable dependencies via version bumps where safe; do NOT fix a vulnerability by modifying application logic in a restricted file.
+
+## Step 5 — Actually test it, don’t just claim it works
+
+Before reporting anything as “done” or “fixed”:
+
+1. Start the server in the Replit environment and show me the actual terminal output of it booting successfully (or the actual error if it doesn’t).
+1. Hit `/healthz` and show the actual response.
+1. Hit the root `/` path (whatever the preview is actually requesting) and show the actual response — confirm the “route doesn’t exist” error is gone, with real output, not a prediction.
+1. Run the typecheck command and show real output, not “should pass.”
+1. If anything fails, say so plainly. Do not present a failed or untested step as working.
+
+## Final output required
+
+1. Root-cause explanation of the preview 404, with the actual fix applied and proof it now works (real output from step 5)
+1. Exact dual-remote git setup instructions, including anything I must do manually on the GitHub side
+1. A table of every env var, its current status, and what I need to do for each
+1. Full list of files touched, with explicit confirmation none are inside the restricted routes/controllers/admin/business-logic boundary
+1. Vulnerability scan results and what was fixed vs. what needs my decision
+1. Anything you found that looks like a real bug inside a restricted file, reported but NOT fixed by you

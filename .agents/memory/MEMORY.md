@@ -1,0 +1,2 @@
+- [api-zod split assembly](api-zod-split.md) — @workspace/api-zod is split across two numbered artifact dirs; must merge into .merged/api-zod for pnpm workspace
+- [workspace root setup](workspace-root.md) — true pnpm workspace root is /home/runner/workspace/, NOT 01-root-and-misc; Node.js resolves real paths not symlinks

@@ -183,6 +183,24 @@ const liveChatRateLimit = rateLimit({
 
 app.use("/api/live-chat", liveChatRateLimit);
 
+// ---------------------------------------------------------------------------
+// Root, /api, and /healthz handlers (config-layer, not route-file handlers)
+// ---------------------------------------------------------------------------
+// Without these, Replit's preview pane and platform healthchecks both fail:
+//
+//  - GET /     → no handler → Express 404 → {"status":"error","message":"this route doesn't exist"}
+//  - GET /api  → no handler → same 404 (all routes are under /api/*)
+//  - GET /healthz → Railway/Render healthcheckPath convention; without this alias
+//                  the platform healthcheck 404s and marks the service unhealthy
+//
+// Fix: redirect browser requests at / and /api to the canonical health endpoint,
+// and expose /healthz directly (not just /api/healthz) for platform probes.
+// The /healthz response is intentionally DB-independent so a DB blip never
+// triggers a platform restart loop.
+app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
+app.get("/", (_req, res) => res.redirect(302, "/api/healthz"));
+app.get("/api", (_req, res) => res.redirect(302, "/api/healthz"));
+
 app.use("/api", router);
 
 export default app;

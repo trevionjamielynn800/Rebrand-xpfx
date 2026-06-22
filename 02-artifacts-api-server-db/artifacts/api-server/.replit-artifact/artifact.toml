@@ -1,32 +1,33 @@
 kind = "api"
-previewPath = "/api" # TODO - should be excluded from preview in the first place
-title = "API Server"
-version = "1.0.0"
-id = "3B4_FFSkEVBkAeYMFRJ2e"
+  previewPath = "/api/healthz"
+  title = "API Server"
+  version = "1.0.0"
+  id = "3B4_FFSkEVBkAeYMFRJ2e"
 
-[[services]]
-localPort = 8080
-name = "API Server"
-paths = ["/api"]
+  [[services]]
+  localPort = 8080
+  name = "API Server"
+  paths = ["/api"]
 
-[services.development]
-run = "ENABLE_DEMO_AUTH=true pnpm --filter @workspace/api-server run dev"
+  [services.development]
+  run = "PORT=8080 ENABLE_DEMO_AUTH=true sh -c 'cd /home/runner/workspace && COREPACK_ENABLE_STRICT=0 pnpm install --no-frozen-lockfile 2>&1 | tail -3 && cd /home/runner/workspace/02-artifacts-api-server-db/artifacts/api-server && node ./build.mjs && node --enable-source-maps ./dist/index.mjs'"
 
-[services.production]
+  [services.production]
 
-[services.production.build]
-args = ["pnpm", "--filter", "@workspace/api-server", "run", "build"]
+  [services.production.build]
+  args = ["pnpm", "--filter", "@workspace/api-server", "run", "build"]
 
-[services.production.build.env]
-NODE_ENV = "production"
+  [services.production.build.env]
+  NODE_ENV = "production"
 
-[services.production.run]
-# we don't run through pnpm to make startup faster in production
-args = ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
+  [services.production.run]
+  # we don't run through pnpm to make startup faster in production
+  args = ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
 
-[services.production.run.env]
-PORT = "8080"
-NODE_ENV = "production"
+  [services.production.run.env]
+  PORT = "8080"
+  NODE_ENV = "production"
 
-[services.production.health.startup]
-path = "/api/healthz"
+  [services.production.health.startup]
+  path = "/api/healthz"
+  
