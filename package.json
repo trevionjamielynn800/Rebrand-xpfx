@@ -3,15 +3,21 @@
   "private": true,
   "packageManager": "npm@10.8.2",
   "workspaces": [
-    "02-artifacts-api-server-db/artifacts/api-server",
-    "07-lib-misc/lib/db",
-    ".merged/api-zod",
-    ".merged/nextrade",
-    "07-lib-misc/lib/api-spec",
-    "07-lib-misc/lib/api-client-react",
-    "03-artifacts-admin-portal/artifacts/admin-portal",
-    "04-artifacts-mockup-sandbox/artifacts/mockup-sandbox"
+    "artifacts/api-server",
+    "artifacts/admin-portal",
+    "artifacts/mockup-sandbox",
+    "artifacts/nextrade",
+    "lib/db",
+    "lib/api-zod",
+    "lib/api-spec",
+    "lib/api-client-react"
   ],
+  "scripts": {
+    "build": "npm run build -w @workspace/api-server",
+    "start": "npm run start -w @workspace/api-server",
+    "dev": "npm run dev -w @workspace/api-server",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
   "overrides": {
     "esbuild": "0.27.3",
     "lodash": "4.18.1",
