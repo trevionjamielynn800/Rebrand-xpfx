@@ -1,262 +1,182 @@
-import express, { type Express } from "express";
-import cookieParser from "cookie-parser";
-import cors from "cors";
-import pinoHttp from "pino-http";
-import { rateLimit } from "express-rate-limit";
-import { existsSync } from "node:fs";
-import { resolve, join } from "node:path";
-import router from "./routes";
-import { logger } from "./lib/logger";
-import { attachSession } from "./lib/session";
-import { platformGate } from "./lib/platform-gate";
-import { env, isProduction } from "./lib/env";
+import express, { Request, Response, NextFunction } from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import compression from 'compression';
+import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import rateLimit from 'express-rate-limit';
+import pinoHttp from 'pino-http';
+import path from 'path';
 
-const app: Express = express();
+const app = express();
 
-// Trust the platform's TLS-terminating reverse proxy in production so that
-// rate-limiting middleware keys on real client IPs rather than the proxy's IP.
-if (isProduction) {
-  app.set("trust proxy", 1);
-}
+// ─── LOGGING ──────────────────────────────────────────────────────────────────
+app.use(pinoHttp({
+  level: process.env.LOG_LEVEL || 'info',
+  transport: process.env.NODE_ENV !== 'production'
+    ? { target: 'pino-pretty' }
+    : undefined
+}));
 
-if (isProduction && !env.SESSION_SECRET) {
-  throw new Error(
-    "SESSION_SECRET is required in production. Set it as an environment secret before starting the server.",
-  );
-}
-const SESSION_SECRET = env.SESSION_SECRET ?? "xpfx-dev-secret-change-me";
-
-app.use(
-  pinoHttp({
-    logger,
-    serializers: {
-      req(req) {
-        return { id: req.id, method: req.method, url: req.url?.split("?")[0] };
-      },
-      res(res) {
-        return { statusCode: res.statusCode };
-      },
-    },
-  }),
-);
-// Build an explicit allowlist of frontend origins for CORS.
-//
-// Priority (first match wins):
-//   1. ALLOWED_ORIGINS — comma-separated full origins, e.g.:
-//        https://app.yourdomain.com,https://admin.yourdomain.com
-//      Use this on Railway, Render, VPS, and any non-Replit deployment.
-//   2. REPLIT_DOMAINS — comma-separated hostnames injected by Replit, e.g.:
-//        foo.repl.co,bar.repl.co
-//      The server converts these to https:// origins automatically.
-//
-// In development all origins are permitted so local work is unimpeded.
-// In production, if neither variable is set, all credentialed cross-origin
-// requests are denied (fail-closed).
-const allowedOrigins: Set<string> | null = (() => {
-  if (!isProduction) return null; // null == allow-all in dev
-
-  const origins = new Set<string>();
-
-  // ALLOWED_ORIGINS: values are already full origins (https://...)
-  const allowedRaw = env.ALLOWED_ORIGINS ?? "";
-  for (const origin of allowedRaw.split(",").map((s) => s.trim()).filter(Boolean)) {
-    origins.add(origin);
-  }
-
-  // REPLIT_DOMAINS fallback: bare hostnames → https:// origins
-  if (origins.size === 0) {
-    const replitRaw = env.REPLIT_DOMAINS ?? "";
-    for (const host of replitRaw.split(",").map((s) => s.trim()).filter(Boolean)) {
-      origins.add(`https://${host}`);
+// ─── SECURITY HEADERS ─────────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"]
     }
-  }
+  },
+  crossOriginEmbedderPolicy: false
+}));
 
-  if (origins.size === 0) {
-    logger.warn(
-      "Neither ALLOWED_ORIGINS nor REPLIT_DOMAINS is set in production — credentialed cross-origin requests will be denied. " +
-      "Set ALLOWED_ORIGINS=https://your-frontend.com in your platform environment.",
-    );
-  }
-  return origins; // may be empty; empty == deny all cross-origin credentialed requests
-})();
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
 
-app.use(
-  cors({
-    origin(origin, callback) {
-      // No Origin header → server-to-server or same-origin request; pass through.
-      if (!origin) return callback(null, false);
-      if (allowedOrigins === null) return callback(null, true); // dev: allow all
-      if (allowedOrigins.has(origin)) return callback(null, true);
-      return callback(null, false); // unknown origin — deny credentials
-    },
-    credentials: true,
-  }),
-);
-
-// cookieParser must run before the CSRF middleware so req.signedCookies is
-// populated when we check for the session cookie below.
-app.use(cookieParser(SESSION_SECRET));
-
-// CSRF defense-in-depth: for cookie-authenticated mutating requests in
-// production, reject any Origin/Referer that is not on the allowlist.
-// This is a secondary layer; the CORS policy above is the primary guard.
-app.use((req, res, next) => {
-  if (
-    isProduction &&
-    allowedOrigins !== null &&
-    ["POST", "PUT", "PATCH", "DELETE"].includes(req.method)
-  ) {
-    const originHeader = req.headers.origin as string | undefined;
-    let checkOrigin: string | undefined = originHeader;
-    if (!checkOrigin && req.headers.referer) {
-      try {
-        checkOrigin = new URL(req.headers.referer as string).origin;
-      } catch {
-        checkOrigin = undefined;
-      }
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked: ${origin}`));
     }
-    // Only enforce when an origin is present and the request carries a session
-    // cookie — unauthenticated mutations (signup, login) don't need protection.
-    const hasCookie = Boolean(
-      req.signedCookies?.["xpfx_sid"] ?? req.cookies?.["xpfx_sid"],
-    );
-    if (checkOrigin && hasCookie && !allowedOrigins.has(checkOrigin)) {
-      res.status(403).json({ error: "Forbidden" });
-      return;
-    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token']
+}));
+
+// ─── COMPRESSION ──────────────────────────────────────────────────────────────
+app.use(compression());
+
+// ─── WEBHOOK RAW BODY ─────────────────────────────────────────────────────────
+app.use('/api/webhooks', express.raw({ type: 'application/json' }));
+
+// ─── BODY PARSERS ─────────────────────────────────────────────────────────────
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// ─── SESSION ──────────────────────────────────────────────────────────────────
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'xpresspro-fx-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'strict',
+    maxAge: 24 * 60 * 60 * 1000
+  }
+}));
+
+// ─── GLOBAL RATE LIMITER ──────────────────────────────────────────────────────
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' }
+});
+
+// ─── AUTH RATE LIMITER ────────────────────────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many authentication attempts.' }
+});
+
+// ─── LIVE CHAT RATE LIMITER ───────────────────────────────────────────────────
+const liveChatLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Live chat rate limit reached.' }
+});
+
+app.use('/api/', globalLimiter);
+app.use('/api/auth/', authLimiter);
+app.use('/api/live-chat/', liveChatLimiter);
+
+// ─── TRUST PROXY ──────────────────────────────────────────────────────────────
+app.set('trust proxy', 1);
+
+// ─── HEALTH CHECKS ────────────────────────────────────────────────────────────
+app.get('/healthz', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'XpressPro FX API',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+app.get('/api/healthz', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'XpressPro FX API',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
+});
+
+// ─── STATIC FILE SERVING ──────────────────────────────────────────────────────
+const staticPath = path.join(__dirname, '../../public');
+app.use(express.static(staticPath));
+
+// ─── PLATFORM GATE ────────────────────────────────────────────────────────────
+app.use('/api/*', (req: Request, res: Response, next: NextFunction) => {
+  const platform = req.headers['x-platform'];
+  if (!platform) {
+    return res.status(400).json({
+      success: false,
+      message: 'Missing platform identifier.'
+    });
   }
   next();
 });
 
-// MoonPay signs the *raw* webhook body. Capture it as a Buffer on the
-// request before the JSON parser turns it into an object, so the
-// /moonpay/webhook handler can HMAC the exact bytes MoonPay signed.
-app.use(
-  "/api/moonpay/webhook",
-  express.raw({ type: "application/json", limit: "1mb" }),
-);
-app.use(
-  "/api/coinbase/webhook",
-  express.raw({ type: "application/json", limit: "1mb" }),
-);
+// ─── API ROUTES PLACEHOLDER ───────────────────────────────────────────────────
+// Mount your route modules here as they are built
+// app.use('/api/auth', authRouter);
+// app.use('/api/accounts', accountsRouter);
+// app.use('/api/trades', tradesRouter);
+// app.use('/api/transactions', transactionsRouter);
+// app.use('/api/market', marketRouter);
+// app.use('/api/admin', adminRouter);
+// app.use('/api/webhooks', webhooksRouter);
+// app.use('/api/live-chat', liveChatRouter);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(attachSession);
-app.use(platformGate);
-
-// Rate-limit auth endpoints to resist brute-force and credential stuffing.
-// Counts attempts per IP. Limits are intentionally tight on high-risk paths.
-const authRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15-minute window
-  limit: 20,                 // max 20 auth attempts per IP per window
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
-  message: { error: "Too many requests. Please try again later." },
-  skip: () => !isProduction,  // enforce only in production
+// ─── SPA FALLBACK ─────────────────────────────────────────────────────────────
+app.get('*', (_req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, '../../public', 'index.html'));
 });
 
-const otpRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,                 // stricter limit for OTP verification and resend
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
-  message: { error: "Too many requests. Please try again later." },
-  skip: () => !isProduction,
-});
-
-app.use("/api/auth/login", authRateLimit);
-app.use("/api/auth/signup", authRateLimit);
-app.use("/api/auth/verify-otp", otpRateLimit);
-app.use("/api/auth/resend-otp", otpRateLimit);
-app.use("/api/auth/forgot-password", otpRateLimit);
-app.use("/api/auth/reset-password", otpRateLimit);
-
-// Rate-limit live-chat to prevent cost and availability abuse of the AI backend.
-// Keyed per authenticated user ID (falls back to IP for unauthenticated requests).
-const liveChatRateLimit = rateLimit({
-  windowMs: 60 * 1000,           // 1-minute window
-  limit: 10,                     // max 10 messages per user per minute
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
-  keyGenerator: (req) => (req as typeof req & { userId?: string }).userId ?? req.ip ?? "unknown",
-  validate: { keyGeneratorIpFallback: false },
-  message: { error: "Too many messages. Please wait before sending another." },
-  skip: () => !isProduction,
-});
-
-app.use("/api/live-chat", liveChatRateLimit);
-
-// ---------------------------------------------------------------------------
-// Health, status, and API root
-// ---------------------------------------------------------------------------
-// /healthz — DB-independent liveness probe used by Railway, Render, and VPS
-// health checks. Intentionally never touches the DB so a DB blip does not
-// trigger a platform restart loop.
-app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
-app.get("/api/healthz", (_req, res) => res.json({ status: "ok" }));
-app.get("/api", (_req, res) => res.redirect(302, "/api/healthz"));
-
-// /api/status — server uptime, version, and runtime environment.
-app.get("/api/status", (_req, res) => {
-  const uptimeSec = Math.floor(process.uptime());
-  const h = Math.floor(uptimeSec / 3600);
-  const m = Math.floor((uptimeSec % 3600) / 60);
-  const s = uptimeSec % 60;
-  res.json({
-    status: "ok",
-    app: env.APP_NAME ?? "XpressProFx",
-    environment: process.env.NODE_ENV ?? "development",
-    uptime: {
-      seconds: uptimeSec,
-      human: `${h}h ${m}m ${s}s`,
-    },
-    timestamp: new Date().toISOString(),
-    endpoints: {
-      health: "/api/healthz",
-      dbHealth: "/api/healthz/db",
-      status: "/api/status",
-    },
+// ─── GLOBAL ERROR HANDLER ─────────────────────────────────────────────────────
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  const status = (err as any).status || 500;
+  console.error(`[ERROR] ${err.message}`);
+  res.status(status).json({
+    success: false,
+    message: process.env.NODE_ENV === 'production'
+      ? 'An unexpected error occurred.'
+      : err.message
   });
 });
-
-app.use("/api", router);
-
-// ---------------------------------------------------------------------------
-// Static file serving — single-service production deployments
-// ---------------------------------------------------------------------------
-// When the frontend apps have been built (npm run build:all), the API server
-// can serve their static assets directly. This is used on Railway, Render, or
-// VPS where everything runs in one container.
-//
-// If the dist directories don't exist (e.g. a pure API deployment with the
-// frontend hosted on Vercel/CDN), these blocks are silent no-ops — the
-// existsSync guards ensure no errors are thrown.
-//
-// Build order: npm run build:all   (builds API + nextrade + admin-portal)
-// Then start:  npm start           (serves everything from one process)
-const adminDist = resolve("artifacts/admin-portal/dist/public");
-if (existsSync(adminDist)) {
-  app.use("/xpadmin", express.static(adminDist));
-  // SPA fallback — any /xpadmin/* path not matched by a real file serves index.html
-  app.get("/xpadmin/*", (_req, res) => {
-    res.sendFile(join(adminDist, "index.html"));
-  });
-  logger.info({ path: adminDist }, "[static] Serving admin portal");
-}
-
-const nextraDist = resolve("artifacts/nextrade/dist/public");
-if (existsSync(nextraDist)) {
-  app.use(express.static(nextraDist));
-  // SPA fallback — all unmatched routes serve the NeXTrade index.html
-  // This must be registered last so API routes take priority.
-  app.use((_req, res) => {
-    res.sendFile(join(nextraDist, "index.html"));
-  });
-  logger.info({ path: nextraDist }, "[static] Serving NeXTrade app");
-} else {
-  // No frontend build present — redirect root to health check for convenience.
-  app.get("/", (_req, res) => res.redirect(302, "/api/healthz"));
-}
 
 export default app;
