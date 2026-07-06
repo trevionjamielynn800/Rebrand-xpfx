@@ -1,108 +1,169 @@
-import app from "./app";
-import { adminSeedStatus } from "./lib/store";
-import { logger } from "./lib/logger";
-import { startSweeper } from "./lib/sweeper";
-import { assertRequiredEnv } from "./lib/env";
-import { hydrateFromDb } from "./lib/hydrate";
+import express, { Express, Request, Response, NextFunction } from 'express'
+import helmet from 'helmet'
+import compression from 'compression'
+import cors from 'cors'
+import rateLimit from 'express-rate-limit'
+import pino from 'pino'
+import pinoHttp from 'pino-http'
+import dotenv from 'dotenv'
 
-const { port } = assertRequiredEnv();
+// Load environment variables
+dotenv.config()
 
-if (adminSeedStatus.provisioned) {
-  logger.info(
-    { adminEmail: adminSeedStatus.email },
-    "[admin] Admin account provisioned from environment.",
-  );
-} else {
-  logger.warn(
-    { reason: adminSeedStatus.reason },
-    "[admin] No admin account provisioned. Set ADMIN_EMAIL and ADMIN_PASSWORD environment variables to enable admin login.",
-  );
+// Initialize logger
+const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+})
+
+const app: Express = express()
+
+// === ENVIRONMENT VALIDATION ===
+const REQUIRED_ENV = [
+  'DATABASE_URL',
+  'SESSION_SECRET',
+  'JWT_SECRET',
+  'NODE_ENV',
+  'ALLOWED_ORIGINS',
+]
+
+const missing = REQUIRED_ENV.filter((v) => !process.env[v])
+if (missing.length > 0) {
+  logger.error('STARTUP FAILED — Missing env vars:', missing.join(', '))
+  process.exit(1)
 }
 
-// --------------------------------------------------------------------------
-// Crash guards
-// --------------------------------------------------------------------------
-// Without these, one unhandled promise rejection or thrown error anywhere
-// in the app kills the entire Node process — the platform then shows the
-// request as "crashed" and restarts the container, dropping in-flight requests.
-//
-// These handlers log the error with full context and keep the process
-// alive for transient/recoverable errors (a failed fetch, a bad DB query
-// that wasn't awaited correctly, etc). This is NOT a way to "fix" broken
-// code — a bug that throws will keep throwing every time it's hit. What
-// this buys you is that ONE bad request can't take down the whole server
-// for every other user.
-process.on("uncaughtException", (err) => {
-  logger.error({ err: err.message, stack: err.stack }, "[crash-guard] uncaughtException — process kept alive");
-});
+const PORT = parseInt(process.env.PORT || '8080', 10)
+const NODE_ENV = process.env.NODE_ENV
 
-process.on("unhandledRejection", (reason) => {
-  const err = reason instanceof Error ? reason : new Error(String(reason));
-  logger.error({ err: err.message, stack: err.stack }, "[crash-guard] unhandledRejection — process kept alive");
-});
+logger.info({
+  PORT,
+  NODE_ENV,
+  message: 'Environment variables validated successfully',
+})
 
-// --------------------------------------------------------------------------
-// Startup: hydrate then listen
-// --------------------------------------------------------------------------
-// Hydration must complete before the HTTP server opens so that the first
-// request never sees an empty in-memory store. Errors are non-fatal — the
-// server continues in in-memory-only mode (data lost on restart) rather than
-// refusing to start entirely.
-async function main() {
-  try {
-    await hydrateFromDb();
-  } catch (err) {
-    const e = err instanceof Error ? err : new Error(String(err));
-    logger.error(
-      { err: e.message },
-      "[hydrate] Startup hydration failed — continuing in in-memory-only mode",
-    );
-  }
+// === HEALTH CHECK FIRST (before all middleware) ===
+app.get('/healthz', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: NODE_ENV,
+    port: PORT,
+  })
+})
 
-  const server = app.listen(port, (err?: Error) => {
-    if (err) {
-      logger.error({ err }, "Error listening on port");
-      process.exit(1);
-    }
-    logger.info({ port }, "Server listening");
-    startSweeper();
-  });
+// === LOGGING MIDDLEWARE ===
+app.use(
+  pinoHttp({
+    logger,
+    serializers: {
+      req: (req) => ({
+        method: req.method,
+        url: req.url,
+        headers: req.headers,
+      }),
+      res: (res) => ({
+        statusCode: res.statusCode,
+      }),
+    },
+  })
+)
 
-  // --------------------------------------------------------------------------
-  // Graceful shutdown
-  // --------------------------------------------------------------------------
-  // Platforms send SIGTERM before stopping/restarting a container (deploys,
-  // scaling, healthcheck failures). Without handling it, in-flight requests
-  // get cut off mid-response. This stops accepting new connections, lets
-  // existing requests finish (up to a timeout), then exits cleanly.
-  let shuttingDown = false;
+// === SECURITY MIDDLEWARE ===
+app.use(helmet())
+app.use(compression())
 
-  function shutdown(signal: string) {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    logger.info({ signal }, "[shutdown] received signal, closing gracefully");
+// === BODY PARSING ===
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true }))
 
-    const forceExitTimer = setTimeout(() => {
-      logger.warn("[shutdown] graceful shutdown timed out, forcing exit");
-      process.exit(1);
-    }, 10_000);
-
-    server.close((closeErr) => {
-      clearTimeout(forceExitTimer);
-      if (closeErr) {
-        logger.error({ err: closeErr.message }, "[shutdown] error during close");
-        process.exit(1);
+// === CORS ===
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()) || []
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true)
+      } else {
+        logger.warn({ origin }, 'CORS rejected origin')
+        callback(new Error('Not allowed by CORS'))
       }
-      logger.info("[shutdown] closed all connections, exiting cleanly");
-      process.exit(0);
-    });
-  }
+    },
+    credentials: true,
+  })
+)
 
-  process.on("SIGTERM", () => shutdown("SIGTERM"));
-  process.on("SIGINT", () => shutdown("SIGINT"));
+// === RATE LIMITING ===
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 requests per windowMs
+  message: 'Too many auth attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+// === ROUTES ===
+app.use('/api/auth', authLimiter)
+
+app.get('/api/status', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    environment: NODE_ENV,
+  })
+})
+
+// === GLOBAL ERROR HANDLER (must be last) ===
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({
+    error: err.message,
+    stack: err.stack,
+    message: 'Unhandled error',
+  })
+  res.status(err.status || 500).json({
+    error:
+      NODE_ENV === 'production'
+        ? 'Internal Server Error'
+        : err.message,
+  })
+})
+
+// === CATCH 404 ===
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ error: 'Not Found' })
+})
+
+// === DATABASE + SERVER START ===
+async function startServer() {
+  try {
+    logger.info('Starting server...')
+    app.listen(PORT, '0.0.0.0', () => {
+      logger.info({
+        PORT,
+        NODE_ENV,
+        message: `✅ Server running on 0.0.0.0:${PORT}`,
+      })
+      logger.info(`✅ Health check: http://0.0.0.0:${PORT}/healthz`)
+    })
+  } catch (error: any) {
+    logger.error({
+      error: error.message,
+      stack: error.stack,
+      message: '❌ STARTUP FAILED',
+    })
+    process.exit(1)
+  }
 }
 
-main().catch((err) => {
-  logger.error({ err }, "Fatal startup error");
-  process.exit(1);
-});
+// === GRACEFUL SHUTDOWN ===
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, shutting down gracefully')
+  process.exit(0)
+})
+
+process.on('SIGINT', () => {
+  logger.info('SIGINT received, shutting down gracefully')
+  process.exit(0)
+})
+
+startServer()

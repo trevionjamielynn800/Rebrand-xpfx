@@ -1,101 +1,41 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
+# Dependencies
+node_modules
 
-# Diagnostic reports
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+# Lock files (keep package-lock.json, delete pnpm-lock.yaml, yarn.lock)
+pnpm-lock.yaml
+yarn.lock
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage
-lib-cov
-coverage
-*.lcov
-.nyc_output
-
-# Dependency directories
-node_modules/
-jspm_packages/
-
-# Build output (do not commit compiled dist)
-dist/
-.output/
-build/Release
-
-# TypeScript cache
-*.tsbuildinfo
-
-# npm / yarn / pnpm
-.npm
-.pnpm-store
-.yarn-integrity
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-.pnp.*
-
-# dotenv — NEVER commit secrets
+# Environment
 .env
-.env.*
-!.env.example
+.env.local
+.env.*.local
 
-# Secrets file that should never be committed
-artifacts/api-server/env
-
-# Editor / IDE
-.vscode-test
-.eslintcache
-.stylelintcache
-
-# Cache directories
+# Build outputs
+dist
+build
 .cache
-.parcel-cache
-.vite/
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
-**/.vitepress/dist
-**/.vitepress/cache
 
-# Framework output dirs
-.next
-.nuxt
-.svelte-kit/
-.docusaurus
-.serverless/
-.fusebox/
-.dynamodb/
-.firebase/
-.temp
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+npm-debug.log*
+
+# Testing
+coverage
+__tests__
 
 # Misc
-*.tgz
-.node_repl_history
-.tern-port
-web_modules/
-bower_components/
-.grunt
-.lock-wscript
-
-# ZIP archives (source is committed directly; zips are redundant)
-*_[0-9]*.zip
-
-# macOS metadata
-__MACOSX/
-.DS_Store
-
-# Leftover extracted zip folders
-artifacts_[0-9]*/
-attached_assets_[0-9]*/
-scripts_[0-9]*/
-Archive_[0-9]*/
+.replit
+replit.nix
+.env.example

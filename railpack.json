@@ -1,16 +1,10 @@
 {
   "provider": "node",
-  "install": {
-    "command": "npm install"
-  },
-  "build": {
-    "command": "npm run build"
-  },
-  "start": {
-    "command": "node dist/index.js"
-  },
-  "environment": {
+  "install": "npm install",
+  "build": "npm run build",
+  "start": "node artifacts/api-server/dist/index.js",
+  "env": {
     "NODE_ENV": "production",
-    "PORT": "3000"
+    "PORT": "8080"
   }
 }
