@@ -1,7 +1,39 @@
-package.json json ("name":"xpressfx-workspace-root","private"true,"packageManager"." npm@10.8.2""engines":
-{"node":">=20","npm":">=10"},"workspaces":
-["artifacts/*"| 'lib/*"],"scripts":("build:api"."nрm -w
-@workspace/api-server run build","build":"npm run build:api","start":"node --enable-source-maps artifacts/api-server/dist/
-index.mjs',"typecheck":"npm run typecheck-ws --
-if-present"),"devDependencies":
-("esbuild":"0.27.3"),"overrides": ("lodash":"4.17.21")}
+{
+  "name": "rebranded-xpfx",
+  "version": "1.0.0",
+  "packageManager": "pnpm@9.5.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "pnpm run --filter ./packages/... build && pnpm run --filter ./apps/... build",
+    "dev": "pnpm run --filter ./apps/api-server dev",
+    "start": "node artifacts/api-server/dist/index.mjs",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf dist build artifacts node_modules"
+  },
+  "dependencies": {
+    "zod": "^3.23.8",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "dotenv": "^16.4.5",
+    "compression": "^1.7.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/compression": "^1.7.5",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0",
+    "eslint": "^9.0.0",
+    "rimraf": "^5.0.7",
+    "tsx": "^4.11.0"
+  }
+}
