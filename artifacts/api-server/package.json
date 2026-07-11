@@ -18,12 +18,11 @@
     "@prisma/client": "^5.14.0",
     "@workspace/api-zod": "^1.0.0",
     "@workspace/db": "^0.0.0",
-    "prom-client": "^14.0.1",
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "csurf": "^1.11.0",
+    "csurf": "^1.2.2",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.45.2",
     "ethers": "^6.0.0",
@@ -41,7 +40,8 @@
     "pino-http": "^10.2.0",
     "pino-pretty": "^11.2.1",
     "prisma": "^5.14.0",
-    "uuid": "^10.0.0",
+    "prom-client": "^14.0.1",
+    "uuid": "^14.0.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
