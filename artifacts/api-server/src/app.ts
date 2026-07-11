@@ -41,14 +41,39 @@ app.use(helmet({
 }));
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.REPLIT_DOMAINS || '')
   .split(',')
-  .map(o => o.trim())
+  .map((o) => o.trim())
   .filter(Boolean);
+
+function isPreviewHost(hostname: string | undefined): boolean {
+  if (!hostname) return false;
+  const normalized = hostname.toLowerCase();
+  return ['localhost', '127.0.0.1', '::1'].includes(normalized)
+    || normalized.endsWith('.replit.app')
+    || normalized.endsWith('.replit.dev')
+    || normalized.endsWith('.github.dev')
+    || normalized.endsWith('.railway.app')
+    || normalized.endsWith('.render.com')
+    || normalized.endsWith('.vercel.app');
+}
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    const hostname = (() => {
+      try {
+        return new URL(origin).hostname;
+      } catch {
+        return undefined;
+      }
+    })();
+
+    if (allowedOrigins.includes(origin) || isPreviewHost(hostname)) {
       callback(null, true);
     } else {
       callback(new Error(`CORS blocked: ${origin}`));
@@ -194,14 +219,32 @@ app.use(express.static(frontendStaticPath, { index: false }));
 // ─── PLATFORM GATE ────────────────────────────────────────────────────────────
 app.use('/api/*', (req: Request, res: Response, next: NextFunction) => {
   const isProd = process.env.NODE_ENV === 'production';
-  const platform = req.headers['x-platform'];
-  if (isProd && !platform) {
+  const platformHeader = req.headers['x-platform'];
+  const platform = Array.isArray(platformHeader)
+    ? platformHeader[0]
+    : platformHeader;
+
+  const previewRequest = Boolean(
+    process.env.PREVIEW_MODE === 'true' ||
+    process.env.PREVIEW_MODE === '1' ||
+    process.env.CODESPACE_NAME ||
+    process.env.REPLIT_DOMAINS ||
+    isPreviewHost(req.hostname) ||
+    isPreviewHost(req.headers['x-forwarded-host'] as string | undefined)
+  );
+
+  if (isProd && !platform && !previewRequest) {
     res.status(400).json({
       success: false,
       message: 'Missing platform identifier.'
     });
     return;
   }
+
+  if (!platform) {
+    req.headers['x-platform'] = 'preview';
+  }
+
   next();
 });
 
