@@ -76,8 +76,6 @@ import {
   X,
   Landmark,
   ShieldOff,
-  CreditCard,
-  Sparkles,
   Plus,
   Trash2,
   Pencil,

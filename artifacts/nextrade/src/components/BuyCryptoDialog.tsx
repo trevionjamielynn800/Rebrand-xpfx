@@ -125,8 +125,7 @@ export function BuyCryptoDialog({
         : "bank_coinbase";
       setPaymentSource(fallback);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moonpaySupported, moonpayLinked, coinbaseLinked]);
+  }, [paymentSource, sourceDisabled]);
   const onRamp: "moonpay" | "coinbase" =
     paymentSource === "bank_coinbase" || paymentSource === "exchange_coinbase"
       ? "coinbase"

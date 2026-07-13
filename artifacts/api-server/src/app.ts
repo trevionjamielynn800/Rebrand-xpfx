@@ -94,7 +94,7 @@ app.get('/metrics', async (_req: Request, res: Response) => {
   try {
     res.set('Content-Type', client.register.contentType);
     res.end(await client.register.metrics());
-  } catch (err) {
+  } catch {
     res.status(500).send('Failed to collect metrics');
   }
 });

@@ -33,7 +33,6 @@ function useQueryParams(): URLSearchParams {
   return useMemo(() => {
     const search = typeof window === "undefined" ? "" : window.location.search;
     return new URLSearchParams(search);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 }
 

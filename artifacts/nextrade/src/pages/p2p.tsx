@@ -407,8 +407,7 @@ function ApplyMerchantDialog({ reapply = false }: { reapply?: boolean }) {
       if (!contactEmail) setContactEmail(currentUser?.email ?? "");
       if (!country) setCountry(currentUser?.country ?? "");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, currentUser?.id]);
+  }, [open, currentUser?.fullName, currentUser?.email, currentUser?.country, legalName, contactEmail, country]);
 
   const submit = useSubmitP2PMerchantApplication();
   const queryClient = useQueryClient();
@@ -776,8 +775,7 @@ function BuyViaMoonpayDialog({ listing }: { listing: any }) {
         setDestinationAddress("");
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, listing.minOrder, wallets?.length, connectedWallets?.length]);
+  }, [open, listing.minOrder, platformWalletOptions, externalWalletOptions]);
 
   const handleBuy = async () => {
     if (!verifiedBank) {

@@ -27,7 +27,6 @@ import type {
   P2PNotification,
   P2POrder,
   Promotion,
-  ReferralEntry,
   SupportTicket,
   Trade,
   Transaction,

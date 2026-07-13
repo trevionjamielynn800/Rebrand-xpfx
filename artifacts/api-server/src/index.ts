@@ -39,14 +39,6 @@ async function initDatabase() {
   }
 }
 
-function validateRequiredEnv() {
-  const required = ['SESSION_SECRET', 'JWT_SECRET'];
-  const missing = required.filter((k) => !process.env[k]);
-  if (missing.length > 0) {
-    console.warn('[ENV] Missing recommended environment variables:', missing.join(', '));
-  }
-}
-
 async function bootstrap() {
   try {
     prisma = await initDatabase();

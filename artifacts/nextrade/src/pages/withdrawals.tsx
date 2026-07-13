@@ -89,7 +89,7 @@ export function Withdrawals() {
   // When set, the withdrawal is funded by an on-chain transfer FROM this
   // connected wallet (rather than from the platform main balance). Only
   // available when method === "crypto_wallet".
-  const [sourceWalletId, setSourceWalletId] = useState<string>("platform");
+  const [sourceWalletId] = useState<string>("platform");
   const [withdrawalAsset, setWithdrawalAsset] = useState<"ETH" | "USDT" | "USDC" | "DAI">("USDT");
 
   const main = wallets?.find((w) => w.type === "main");

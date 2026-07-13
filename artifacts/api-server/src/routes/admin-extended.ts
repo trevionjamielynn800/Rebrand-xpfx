@@ -19,7 +19,6 @@ import {
   newId,
   NOW,
   toAdminConnectedWallet,
-  userData,
   users,
 } from "../lib/store";
 import { requireAdmin } from "../lib/session";
