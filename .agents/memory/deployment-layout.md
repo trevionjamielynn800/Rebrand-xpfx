@@ -19,6 +19,6 @@ node artifacts/api-server/dist/index.mjs
 
 **Why:** External platforms (Render, Railway) need to build from source because dist/ is not committed. The pnpm catalog: feature requires pnpm 9+, so `npm install -g pnpm@9` is required before `pnpm install`.
 
-**How to apply:** Any new CI/CD or deployment platform config must use this build + start pattern. The root package.json `build` script and all platform configs (render.yaml, railway.json, nixpacks.toml, fly.toml, Procfile, ecosystem.config.js) follow this pattern.
+**How to apply:** Any new CI/CD or deployment platform config must use this build + start pattern. The root package.json `build` script and all platform configs (render.yaml, railway.json, nixpacks.toml, fly.toml, Procfile, ecosystem.config.cjs) follow this pattern.
 
 **Security:** `artifacts/api-server/env` is gitignored (it was found to contain real credentials). Real secrets live in Replit Secrets (SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD).

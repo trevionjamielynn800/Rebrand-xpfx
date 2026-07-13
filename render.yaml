@@ -49,7 +49,7 @@ services:
         npm run build --workspace artifacts/admin-portal;
       fi
 
-    startCommand: node --enable-source-maps artifacts/api-server/dist/artifacts/api-server/src/index.js
+    startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
 
     healthCheckPath: /healthz
 

@@ -22,7 +22,7 @@ module.exports = {
     {
       name: "xpressfx-api",
       script: "node",
-      args: "--enable-source-maps artifacts/api-server/dist/artifacts/api-server/src/index.js",
+      args: "--enable-source-maps artifacts/api-server/dist/index.mjs",
 
       // Environment — all secrets must be in /etc/xpressfx.env or ~/.env or
       // exported in the shell before calling `pm2 start`.

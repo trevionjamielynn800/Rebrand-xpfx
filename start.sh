@@ -87,4 +87,4 @@ export NODE_ENV="$RUN_NODE_ENV"
 
 echo ""
 echo "[start] Starting API server on port ${PORT}..."
-exec node --enable-source-maps artifacts/api-server/dist/artifacts/api-server/src/index.js
+exec node --enable-source-maps artifacts/api-server/dist/index.mjs

@@ -239,7 +239,7 @@ jobs:
               package-lock.json \
               pnpm-lock.yaml \
               pnpm-workspace.yaml \
-              ecosystem.config.js \
+              ecosystem.config.cjs \
               nginx.conf \
               .env.example
 
@@ -444,11 +444,11 @@ jobs:
 
           if pm2 describe "$PM2_APP" > /dev/null 2>&1; then
             # App exists — reload with zero-downtime
-            pm2 reload ecosystem.config.js --update-env
+            pm2 reload ecosystem.config.cjs --update-env
             echo "✅ Application reloaded (zero-downtime)"
           else
             # First deployment — start fresh
-            pm2 start ecosystem.config.js
+            pm2 start ecosystem.config.cjs
             echo "✅ Application started for first time"
           fi
 
@@ -483,7 +483,7 @@ jobs:
               echo "🔄 Restoring backup from: $BACKUP_PATH"
               rm -rf "$APP_DIR/artifacts"
               cp -r "$BACKUP_PATH/artifacts" "$APP_DIR/"
-              pm2 reload ecosystem.config.js --update-env || pm2 restart "$PM2_APP"
+              pm2 reload ecosystem.config.cjs --update-env || pm2 restart "$PM2_APP"
               echo "✅ Rollback complete — previous version restored"
             fi
 

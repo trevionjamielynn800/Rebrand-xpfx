@@ -138,7 +138,7 @@ Push to your connected Railway branch to trigger automatic deployment.
 
 Railway will execute:
 1. Railpack build using `npm run build`
-2. Start command: `node artifacts/api-server/dist/index.js`
+2. Start command: `node artifacts/api-server/dist/index.mjs`
 3. Health check against `/healthz`
 
 ---

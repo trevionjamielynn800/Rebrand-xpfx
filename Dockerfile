@@ -11,7 +11,7 @@ COPY artifacts/admin-portal/package.json ./artifacts/admin-portal/package.json
 COPY lib/api-client-react/package.json ./lib/api-client-react/package.json
 COPY lib/api-zod/package.json ./lib/api-zod/package.json
 COPY lib/db/package.json ./lib/db/package.json
-COPY artifacts/db/Package.json ./artifacts/db/Package.json
+COPY artifacts/db/package.json ./artifacts/db/package.json
 COPY scripts ./scripts
 RUN npm ci --include=dev --no-audit --no-fund
 
@@ -34,4 +34,4 @@ COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/package-lock.json ./package-lock.json
 COPY --from=build /app/.npmrc ./.npmrc
 EXPOSE 3000
-CMD ["node", "--enable-source-maps", "artifacts/api-server/dist/artifacts/api-server/src/index.js"]
+CMD ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
