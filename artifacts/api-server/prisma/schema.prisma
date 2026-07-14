@@ -1,6 +1,3 @@
-// XpressPro FX — Enterprise Fintech Forex Broker Database Schema
-// Provider: PostgreSQL (Railway managed)
-
 generator client {
   provider = "prisma-client-js"
 }
