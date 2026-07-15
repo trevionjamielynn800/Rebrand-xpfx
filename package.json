@@ -19,7 +19,9 @@
     "lib/db"
   ],
   "scripts": {
-    "postinstall": "node scripts/fix-date-fns.mjs",
+    "generate:secrets": "node scripts/generate-secrets.mjs",
+    "generate:pitch-deck": "node scripts/generate-pitch-deck.mjs",
+    "postinstall": "node scripts/generate-secrets.mjs && node scripts/fix-date-fns.mjs",
     "predeploy": "node scripts/predeploy.mjs --skip-env-check",
     "build": "pnpm run build --workspaces --if-present",
     "build:all": "pnpm run build --workspace artifacts/api-server && pnpm run build --workspace artifacts/nextrade && pnpm run build --workspace artifacts/admin-portal",
