@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
-npm ci
-npm run push -w @workspace/db
+pnpm install --frozen-lockfile
+pnpm --filter db push

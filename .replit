@@ -1,47 +1,20 @@
-modules = ["nodejs-20", "python-3.12", "web"]
-[nix]
-channel = "stable-25_05"
+modules = ["nodejs-24"]
 
-[agent]
-expertMode = true
-stack = "BEST_EFFORT_FALLBACK"
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
 
-[userenv]
-
-[userenv.shared]
-PORT = "8080"
-LOG_LEVEL = "info"
-APP_NAME = "XpressProFx"
-ALLOWED_ORIGINS = "https://xpressprofx.com,https://www.xpressprofx.com"
-NODE_ENV = "development"
-COREPACK_ENABLE_STRICT = "0"
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
 
 [workflows]
+runButton = "Project"
 
-[[ports]]
-localPort = 5000
-externalPort = 80
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
 
-[[ports]]
-localPort = 8080
-externalPort = 8080
-
-[[ports]]
-localPort = 8081
-externalPort = 8081
-
-[[ports]]
-localPort = 8082
-externalPort = 3002
-
-[[ports]]
-localPort = 8083
-externalPort = 3003
-
-[[ports]]
-localPort = 25580
-externalPort = 3001
-
-[[ports]]
-localPort = 25849
-externalPort = 3000
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
