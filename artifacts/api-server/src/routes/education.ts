@@ -11,6 +11,83 @@ import { notifyUser, pushAdminAlert } from "../lib/notify";
 
 const router: IRouter = Router();
 
+router.get("/education/courses/:courseId", requireAuth, (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const data = getUserData(req.userId!);
+    const courses = getDemoCourses();
+    const lessons = getDemoLessons();
+
+    const course = courses.find((c) => c.id === courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found.",
+      });
+    }
+
+    const courseLessons = lessons
+      .filter((l) => l.courseId === courseId)
+      .sort((a, b) => a.order - b.order)
+      .map((lesson) => {
+        const progress = data.lessonProgress.get(lesson.id);
+        return {
+          ...lesson,
+          completed: progress?.completed ?? false,
+          completedAt: progress?.completedAt,
+        };
+      });
+
+    return res.json({
+      success: true,
+      course,
+      lessons: courseLessons,
+    });
+  } catch (error) {
+    console.error("[education] GET /courses/:courseId error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve course lessons.",
+    });
+  }
+});
+
+router.get("/education/progress", requireAuth, (req, res) => {
+  try {
+    const data = getUserData(req.userId!);
+    const courses = getDemoCourses();
+    const lessons = getDemoLessons();
+
+    return res.json({
+      success: true,
+      progress: {
+        totalCoursesAvailable: courses.length,
+        totalLessonsAvailable: lessons.length,
+        completedLessons: Array.from(data.lessonProgress.values()).filter(
+          (p) => p.completed,
+        ).length,
+        completedCourses: courses.filter((course) => {
+          const courseLessons = lessons.filter((l) => l.courseId === course.id);
+          return courseLessons.every((l) => {
+            const p = data.lessonProgress.get(l.id);
+            return p?.completed;
+          });
+        }).length,
+        totalTimeSpent: lessons.reduce((acc, lesson) => {
+          const progress = data.lessonProgress.get(lesson.id);
+          return progress?.completed ? acc + lesson.duration : acc;
+        }, 0),
+      },
+    });
+  } catch (error) {
+    console.error("[education] GET /progress error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve progress.",
+    });
+  }
+});
+
 /**
  * GET /education/courses
  * Returns all available demo trading courses with user progress
@@ -56,47 +133,6 @@ router.get("/education/courses", requireAuth, (req, res) => {
  * GET /education/courses/:courseId/lessons
  * Returns all lessons for a specific course with user progress
  */
-router.get("/education/courses/:courseId", requireAuth, (req, res) => {
-  try {
-    const { courseId } = req.params;
-    const data = getUserData(req.userId!);
-    const courses = getDemoCourses();
-    const lessons = getDemoLessons();
-
-    const course = courses.find((c) => c.id === courseId);
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: "Course not found.",
-      });
-    }
-
-    const courseLessons = lessons
-      .filter((l) => l.courseId === courseId)
-      .sort((a, b) => a.order - b.order)
-      .map((lesson) => {
-        const progress = data.lessonProgress.get(lesson.id);
-        return {
-          ...lesson,
-          completed: progress?.completed ?? false,
-          completedAt: progress?.completedAt,
-        };
-      });
-
-    return res.json({
-      success: true,
-      course,
-      lessons: courseLessons,
-    });
-  } catch (error) {
-    console.error("[education] GET /courses/:courseId error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to retrieve course details.",
-    });
-  }
-});
-
 router.get("/education/courses/:courseId/lessons", requireAuth, (req, res) => {
   try {
     const { courseId } = req.params;
