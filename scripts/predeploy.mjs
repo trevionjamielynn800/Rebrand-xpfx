@@ -167,6 +167,14 @@ for (const pkgPath of packageJsonFiles) {
 }
 console.log(`[predeploy] Checked ${packageJsonFiles.length} package.json files.`);
 
+// Get root entries early so we can use it for multiple checks
+let rootEntries;
+try {
+  rootEntries = readdirSync(ROOT);
+} catch {
+  rootEntries = [];
+}
+
 // Check for pnpm lock files and enforce npm-only
 console.log("[predeploy] Checking for pnpm artifacts and packageManager declarations...");
 
@@ -334,7 +342,7 @@ for (const jf of jsonFiles) {
     continue;
   }
   if (/"_comment"\s*:/.test(raw)) {
-    fail(`Invalid JSON comment-like key `_comment` found in ${jf}. Remove it to ensure valid JSON.`);
+    fail(`Invalid JSON comment-like key "_comment" found in ${jf}. Remove it to ensure valid JSON.`);
   }
 }
 
