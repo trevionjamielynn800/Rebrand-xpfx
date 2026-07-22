@@ -1,1 +1,0 @@
-{"version":3,"file":"adminPresenceState.d.ts","sourceRoot":"","sources":["adminPresenceState.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,4BAA4B,EAAE,MAAM,gCAAgC,CAAC;AAEnF,MAAM,WAAW,kBAAkB;IACjC,gBAAgB,EAAE,MAAM,CAAC;IACzB,SAAS,EAAE,OAAO,CAAC;IACnB,MAAM,EAAE,4BAA4B,EAAE,CAAC;CACxC"}

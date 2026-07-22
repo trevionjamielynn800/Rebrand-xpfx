@@ -1,1 +1,0 @@
-{"version":3,"file":"getMessagesParams.d.ts","sourceRoot":"","sources":["getMessagesParams.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,kBAAkB,EAAE,MAAM,sBAAsB,CAAC;AAE/D,MAAM,MAAM,iBAAiB,GAAG;IAC9B,OAAO,CAAC,EAAE,kBAAkB,CAAC;IAC7B,SAAS,CAAC,EAAE,MAAM,CAAC;CACpB,CAAC"}

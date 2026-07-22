@@ -11,7 +11,6 @@ COPY artifacts/admin-portal/package.json ./artifacts/admin-portal/package.json
 COPY lib/api-client-react/package.json ./lib/api-client-react/package.json
 COPY lib/api-zod/package.json ./lib/api-zod/package.json
 COPY lib/db/package.json ./lib/db/package.json
-COPY artifacts/db/package.json ./artifacts/db/package.json
 COPY scripts ./scripts
 RUN npm ci --no-audit --no-fund
 
@@ -26,7 +25,7 @@ RUN node scripts/predeploy.mjs --skip-env-check \
 
 FROM base AS runtime
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=5000
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/artifacts ./artifacts
 COPY --from=build --chown=node:node /app/lib ./lib

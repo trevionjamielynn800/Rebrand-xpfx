@@ -1,1 +1,0 @@
-{"version":3,"file":"kycSubmissionRequest.d.ts","sourceRoot":"","sources":["kycSubmissionRequest.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,0BAA0B,EAAE,MAAM,8BAA8B,CAAC;AAE/E,MAAM,WAAW,oBAAoB;IACnC,MAAM,EAAE,0BAA0B,CAAC;IACnC,QAAQ,EAAE,MAAM,CAAC;IACjB,YAAY,EAAE,MAAM,CAAC;IACrB,IAAI,EAAE,MAAM,CAAC;IACb,OAAO,EAAE,MAAM,CAAC;CACjB"}

@@ -1,1 +1,0 @@
-{"version":3,"file":"adminP2PMerchantsResponse.d.ts","sourceRoot":"","sources":["adminP2PMerchantsResponse.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,uBAAuB,EAAE,MAAM,2BAA2B,CAAC;AACzE,OAAO,KAAK,EAAE,sBAAsB,EAAE,MAAM,0BAA0B,CAAC;AAEvE,MAAM,WAAW,yBAAyB;IACxC,YAAY,EAAE,sBAAsB,EAAE,CAAC;IACvC,SAAS,EAAE,uBAAuB,EAAE,CAAC;CACtC"}

@@ -1,1 +1,0 @@
-{"version":3,"file":"getP2PListingsParams.d.ts","sourceRoot":"","sources":["getP2PListingsParams.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,kBAAkB,EAAE,MAAM,sBAAsB,CAAC;AAE/D,MAAM,MAAM,oBAAoB,GAAG;IACjC,IAAI,CAAC,EAAE,kBAAkB,CAAC;IAC1B,KAAK,CAAC,EAAE,MAAM,CAAC;CAChB,CAAC"}

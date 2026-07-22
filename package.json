@@ -30,6 +30,7 @@
     "dev:admin": "npm --workspace=artifacts/admin-portal run dev -- --port 5173",
     "dev:nextrade": "npm --workspace=artifacts/nextrade run dev -- --port 5174",
     "dev:mockup": "npm --workspace=artifacts/mockup-sandbox run dev -- --port 5175",
+    "dev:api": "PORT=5000 npm run dev --workspace=artifacts/api-server",
     "dev:all": "npm run dev:admin & npm run dev:nextrade & npm run dev:mockup || true",
     "lint": "eslint . --config eslint.config.cjs --ext .ts,.tsx,.js,.jsx",
     "typecheck": "tsc --noEmit",

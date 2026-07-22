@@ -1,1 +1,0 @@
-{"version":3,"file":"gasFeeActionPolicy.d.ts","sourceRoot":"","sources":["gasFeeActionPolicy.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH;;;;;;GAMG;AACH,MAAM,WAAW,kBAAkB;IACjC,qDAAqD;IACrD,OAAO,EAAE,OAAO,CAAC;IACjB,uDAAuD;IACvD,iBAAiB,EAAE,MAAM,CAAC;IAC1B;;;KAGC;IACD,gBAAgB,EAAE,MAAM,CAAC;IACzB;;KAEC;IACD,eAAe,EAAE,MAAM,CAAC;IACxB,WAAW,EAAE,MAAM,CAAC;CACrB"}

@@ -1,1 +1,0 @@
-{"version":3,"file":"adminCardSummary.d.ts","sourceRoot":"","sources":["adminCardSummary.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,UAAU,EAAE,MAAM,cAAc,CAAC;AAE/C,MAAM,MAAM,gBAAgB,GAAG,UAAU,GAAG;IAC1C,QAAQ,EAAE,MAAM,CAAC;IACjB,SAAS,EAAE,MAAM,CAAC;CACnB,CAAC"}

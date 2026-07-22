@@ -1,1 +1,0 @@
-{"version":3,"file":"withdrawalGasFeeStatus.d.ts","sourceRoot":"","sources":["withdrawalGasFeeStatus.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,MAAM,WAAW,sBAAsB;IACrC,OAAO,EAAE,OAAO,CAAC;IACjB,iBAAiB,EAAE,MAAM,CAAC;IAC1B,cAAc,EAAE,MAAM,CAAC;IACvB,UAAU,EAAE,OAAO,CAAC;IACpB,OAAO,EAAE,MAAM,CAAC;CACjB"}

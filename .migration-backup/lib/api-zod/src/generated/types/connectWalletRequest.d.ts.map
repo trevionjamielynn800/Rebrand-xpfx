@@ -1,1 +1,0 @@
-{"version":3,"file":"connectWalletRequest.d.ts","sourceRoot":"","sources":["connectWalletRequest.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,0BAA0B,EAAE,MAAM,8BAA8B,CAAC;AAE/E,MAAM,WAAW,oBAAoB;IACnC,MAAM,EAAE,0BAA0B,CAAC;IACnC,KAAK,EAAE,MAAM,CAAC;IACd;;;;OAIG;IACH,UAAU,EAAE,MAAM,CAAC;CACpB"}

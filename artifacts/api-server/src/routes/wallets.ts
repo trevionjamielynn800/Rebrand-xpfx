@@ -2,12 +2,8 @@
  * /wallets routes — list wallets, list transactions, connect external
  * wallets, and read live on-chain data via ethers.js.
  *
- * Sensitive credential material (seed phrases / private keys) submitted at
- * connect time is persisted server-side on the StoredConnectedWallet record
- * but is NEVER returned through the user-facing endpoints. All public
- * responses go through toPublicConnectedWallet() which yields the public
- * ConnectedWallet schema (admins see the AdminConnectedWallet schema via
- * the admin routes).
+ * Connected wallets are non-custodial: only public addresses are accepted and
+ * no signing credentials are collected, stored, or used by this service.
  */
 import { Router, type IRouter } from "express";
 import {
@@ -28,17 +24,9 @@ import { requireAuth } from "../lib/session";
 import { enforceGasFee } from "../lib/gas-fee-gate";
 import { notifyUser, pushAdminAlert } from "../lib/notify";
 import {
-  addressFromPrivateKey,
-  derivePrivateKey,
   getLiveBalance,
-  sendTransaction,
 } from "../lib/blockchain";
 import { isCountryMoonpayBlocked } from "../lib/exchange-availability";
-import {
-  decryptCredential,
-  encryptCredential,
-  isEncryptionAvailable,
-} from "../lib/wallet-encryption";
 
 const router: IRouter = Router();
 
@@ -76,53 +64,13 @@ router.post("/wallets/connect", requireAuth, (req, res) => {
   // the user's account-sync flag (walletSkipped) is implicitly cleared.
   const walletType = parsed.data.walletType.trim().slice(0, 64) || "custom";
 
-  // Derive a real EVM address & key material from the supplied secret. If
-  // derivation fails we surface an explicit 400 rather than silently
-  // creating a synthetic placeholder address — the latter would produce
-  // unusable wallets the live-balance and send routes can never service.
-  let derivedAddress: string;
-  let seedPhrase: string | null = null;
-  let privateKey: string;
-  const rawSecret = parsed.data.value.trim();
-  try {
-    if (parsed.data.method === "seed_phrase") {
-      seedPhrase = rawSecret;
-      privateKey = derivePrivateKey(rawSecret);
-      derivedAddress = addressFromPrivateKey(privateKey);
-    } else {
-      privateKey = rawSecret.startsWith("0x") ? rawSecret : `0x${rawSecret}`;
-      derivedAddress = addressFromPrivateKey(privateKey);
-    }
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : "Unknown error";
-    req.log.warn(
-      { err: detail, method: parsed.data.method },
-      "wallet.connect: rejected invalid credential",
-    );
-    return res.status(400).json({
-      error:
-        parsed.data.method === "seed_phrase"
-          ? "The seed phrase you provided is not a valid BIP-39 mnemonic."
-          : "The private key you provided is not a valid Ethereum private key.",
-      details: detail,
-    });
-  }
-
-  const encryptIfAvailable = (v: string | null): string | null => {
-    if (!v) return v;
-    return isEncryptionAvailable() ? encryptCredential(v) : v;
-  };
-
   const wallet: StoredConnectedWallet = {
     id: newId("cw"),
-    address: derivedAddress,
+    address: parsed.data.address.trim(),
     walletType,
     balance: 0,
     currency: "ETH",
-    method: parsed.data.method,
-    secret: null,
-    seedPhrase: encryptIfAvailable(seedPhrase),
-    privateKey: encryptIfAvailable(privateKey),
+    connectionStatus: "public_address",
     connectedAt: NOW(),
     provider: "self_custody",
     label: null,
@@ -135,7 +83,7 @@ router.post("/wallets/connect", requireAuth, (req, res) => {
     actorId: req.userId!,
     actorName: req.storedUser!.user.fullName,
     action: "wallet.connect",
-    detail: `Connected external ${walletType} wallet ${derivedAddress.slice(0, 8)}…`,
+    detail: `Connected external ${walletType} wallet ${wallet.address.slice(0, 8)}...`,
   });
   // Public response — no secret material returned to the client.
   return res.json(toPublicConnectedWallet(wallet));
@@ -203,30 +151,6 @@ router.post("/wallets/exchange/connect", requireAuth, (req, res) => {
     });
   }
 
-  const rawSecret = parsed.data.value.trim();
-  let derivedAddress: string;
-  let seedPhrase: string | null = null;
-  let privateKey: string;
-  try {
-    if (parsed.data.method === "seed_phrase") {
-      seedPhrase = rawSecret;
-      privateKey = derivePrivateKey(rawSecret);
-      derivedAddress = addressFromPrivateKey(privateKey);
-    } else {
-      privateKey = rawSecret.startsWith("0x") ? rawSecret : `0x${rawSecret}`;
-      derivedAddress = addressFromPrivateKey(privateKey);
-    }
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : "Unknown error";
-    return res.status(400).json({
-      error:
-        parsed.data.method === "seed_phrase"
-          ? "The seed phrase you provided is not a valid BIP-39 mnemonic."
-          : "The private key you provided is not a valid Ethereum private key.",
-      details: detail,
-    });
-  }
-
   // One link per provider per user — replace any prior link.
   const existingIdx = data.connectedWallets.findIndex(
     (w) => w.provider === provider,
@@ -250,21 +174,13 @@ router.post("/wallets/exchange/connect", requireAuth, (req, res) => {
   const label = parsed.data.label?.trim().slice(0, 64) ||
     (provider === "moonpay" ? "MoonPay account" : "Coinbase account");
 
-  const encryptEx = (v: string | null): string | null => {
-    if (!v) return v;
-    return isEncryptionAvailable() ? encryptCredential(v) : v;
-  };
-
   const wallet: StoredConnectedWallet = {
     id: newId("cw"),
-    address: derivedAddress,
+    address: parsed.data.address.trim(),
     walletType: provider,
     balance: 0,
     currency: "ETH",
-    method: parsed.data.method,
-    secret: null,
-    seedPhrase: encryptEx(seedPhrase),
-    privateKey: encryptEx(privateKey),
+    connectionStatus: "public_address",
     connectedAt: NOW(),
     provider,
     label,
@@ -277,7 +193,7 @@ router.post("/wallets/exchange/connect", requireAuth, (req, res) => {
     actorId: req.userId!,
     actorName: stored.user.fullName,
     action: "wallet.exchange_connect",
-    detail: `Linked ${provider} exchange wallet ${derivedAddress.slice(0, 8)}…`,
+    detail: `Linked ${provider} exchange wallet ${wallet.address.slice(0, 8)}...`,
   });
   return res.json(toPublicConnectedWallet(wallet));
 });
@@ -333,53 +249,21 @@ router.post("/wallets/connected/:walletId/send", requireAuth, async (req, res) =
       message: "Connected wallet not found.",
     });
   }
-  // Resolve a usable private key. Either we already derived one at connect
-  // time, or we can derive one from the stored seed phrase on the fly.
-  // Credentials may be AES-256-GCM encrypted at rest — decrypt before use.
-  let privateKey: string | null = wallet.privateKey ? decryptCredential(wallet.privateKey) : null;
-  const decryptedSeed = wallet.seedPhrase ? decryptCredential(wallet.seedPhrase) : null;
-  if (!privateKey && decryptedSeed) {
-    try {
-      privateKey = derivePrivateKey(decryptedSeed);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Could not derive key from seed phrase.";
-      return res.json({
-        success: false,
-        hash: null,
-        from: wallet.address,
-        to: parsed.data.to,
-        asset: parsed.data.asset,
-        amount: parsed.data.amount,
-        blockNumber: null,
-        confirmations: 0,
-        status: null,
-        message,
-      });
-    }
-  }
-  if (!privateKey) {
-    return res.json({
-      success: false,
-      hash: null,
-      from: wallet.address,
-      to: parsed.data.to,
-      asset: parsed.data.asset,
-      amount: parsed.data.amount,
-      blockNumber: null,
-      confirmations: 0,
-      status: null,
-      message:
-        "This wallet does not have signing material on file. Reconnect it with a seed phrase or private key to send.",
-    });
-  }
+  return res.status(403).json({
+    success: false,
+    hash: null,
+    from: wallet.address,
+    to: parsed.data.to,
+    asset: parsed.data.asset,
+    amount: parsed.data.amount,
+    blockNumber: null,
+    confirmations: 0,
+    status: null,
+    message: "Connected wallets are non-custodial. Sign this transaction in your wallet provider.",
+  });
+  /*
   try {
-    const result = await sendTransaction({
-      privateKey,
-      to: parsed.data.to,
-      amount: parsed.data.amount,
-      asset: parsed.data.asset,
-    });
+    const result = await Promise.reject(new Error("unreachable"));
     const txId = newId("tx");
     const txStatus = result.status === 1 ? "completed" : "pending";
     data.transactions.unshift({
@@ -448,6 +332,7 @@ router.post("/wallets/connected/:walletId/send", requireAuth, async (req, res) =
       message,
     });
   }
-});
+    */
+  });
 
 export default router;

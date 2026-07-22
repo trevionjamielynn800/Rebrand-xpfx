@@ -1,5 +1,0 @@
-[build]
-command = "npm install && npm run build --workspace=artifacts/api-server"
-
-[deploy]
-start = "node artifacts/api-server/dist/index.mjs"

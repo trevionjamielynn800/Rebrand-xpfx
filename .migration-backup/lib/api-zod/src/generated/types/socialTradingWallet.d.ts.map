@@ -1,1 +1,0 @@
-{"version":3,"file":"socialTradingWallet.d.ts","sourceRoot":"","sources":["socialTradingWallet.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,MAAM,WAAW,mBAAmB;IAClC,YAAY,EAAE,MAAM,CAAC;IACrB,cAAc,EAAE,MAAM,CAAC;IACvB,QAAQ,EAAE,MAAM,CAAC;IACjB,MAAM,EAAE,OAAO,CAAC;IAChB,YAAY,EAAE,MAAM,CAAC;CACtB"}

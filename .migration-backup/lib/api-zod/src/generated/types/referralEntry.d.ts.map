@@ -1,1 +1,0 @@
-{"version":3,"file":"referralEntry.d.ts","sourceRoot":"","sources":["referralEntry.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,mBAAmB,EAAE,MAAM,uBAAuB,CAAC;AAEjE,MAAM,WAAW,aAAa;IAC5B,EAAE,EAAE,MAAM,CAAC;IACX,YAAY,EAAE,MAAM,CAAC;IACrB,QAAQ,EAAE,MAAM,CAAC;IACjB,MAAM,EAAE,mBAAmB,CAAC;IAC5B,MAAM,EAAE,MAAM,CAAC;CAChB"}

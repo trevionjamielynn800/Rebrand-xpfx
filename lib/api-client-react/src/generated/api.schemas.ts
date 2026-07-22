@@ -79,17 +79,8 @@ export interface Transaction {
   createdAt: string;
 }
 
-export type ConnectWalletRequestMethod =
-  (typeof ConnectWalletRequestMethod)[keyof typeof ConnectWalletRequestMethod];
-
-export const ConnectWalletRequestMethod = {
-  seed_phrase: "seed_phrase",
-  private_key: "private_key",
-} as const;
-
 export interface ConnectWalletRequest {
-  method: ConnectWalletRequestMethod;
-  value: string;
+  address: string;
   /**
    * Wallet provider name (predefined like metamask/trust, or any free-form custom name).
    * @minLength 1
@@ -153,19 +144,9 @@ export const ConnectExchangeWalletRequestProvider = {
   coinbase: "coinbase",
 } as const;
 
-export type ConnectExchangeWalletRequestMethod =
-  (typeof ConnectExchangeWalletRequestMethod)[keyof typeof ConnectExchangeWalletRequestMethod];
-
-export const ConnectExchangeWalletRequestMethod = {
-  seed_phrase: "seed_phrase",
-  private_key: "private_key",
-} as const;
-
 export interface ConnectExchangeWalletRequest {
   provider: ConnectExchangeWalletRequestProvider;
-  method: ConnectExchangeWalletRequestMethod;
-  /** Seed phrase (12/24 words) or 0x-prefixed 64-hex private key. */
-  value: string;
+  address: string;
   label?: string | null;
 }
 

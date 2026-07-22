@@ -432,8 +432,7 @@ function ExchangeWalletRow({ wallet }: { wallet: ConnectedWallet }) {
 function ConnectExchangeWalletDialog() {
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState<"moonpay" | "coinbase">("moonpay");
-  const [method, setMethod] = useState<"seed_phrase" | "private_key">("seed_phrase");
-  const [value, setValue] = useState("");
+  const [address, setAddress] = useState("");
   const [label, setLabel] = useState("");
   const connect = useConnectExchangeWallet();
   const { data: availability } = useGetExchangeAvailability();
@@ -448,13 +447,12 @@ function ConnectExchangeWalletDialog() {
   const moonpayReason = availability?.moonpayUnsupportedReason ?? null;
 
   const submit = () => {
-    if (!value) return;
+    if (!address.trim()) return;
     connect.mutate(
       {
         data: {
           provider,
-          method,
-          value,
+            address: address.trim(),
           label: label.trim() || undefined,
         },
       },
@@ -467,7 +465,7 @@ function ConnectExchangeWalletDialog() {
           queryClient.invalidateQueries({ queryKey: getGetConnectedWalletsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
           setOpen(false);
-          setValue("");
+            setAddress("");
           setLabel("");
         },
         onError: (err: unknown) => {
@@ -559,22 +557,13 @@ function ConnectExchangeWalletDialog() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Connection method</Label>
-            <Tabs value={method} onValueChange={(v) => setMethod(v as typeof method)}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="seed_phrase">Seed Phrase</TabsTrigger>
-                <TabsTrigger value="private_key">Private Key</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-          <div className="space-y-2">
-            <Label>{method === "seed_phrase" ? "12 or 24 word phrase" : "Private key"}</Label>
+              <Label htmlFor="exchange-address-dialog">Public wallet address</Label>
             <Input
-              type={method === "seed_phrase" ? "text" : "password"}
-              placeholder={method === "seed_phrase" ? "abandon ability able..." : "0x..."}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              data-testid="input-exchange-secret"
+                id="exchange-address-dialog"
+                placeholder="0x..."
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                data-testid="input-exchange-address"
             />
             <p className="text-[11px] text-muted-foreground">
               Your details (name, email, country, default bank) will be synced
@@ -588,7 +577,7 @@ function ConnectExchangeWalletDialog() {
           </Button>
           <Button
             onClick={submit}
-            disabled={!value || connect.isPending || (provider === "moonpay" && !moonpaySupported)}
+              disabled={!address.trim() || connect.isPending || (provider === "moonpay" && !moonpaySupported)}
             data-testid="button-submit-exchange-connect"
           >
             {connect.isPending ? "Connecting..." : "Link account"}
@@ -601,13 +590,12 @@ function ConnectExchangeWalletDialog() {
 
 function ConnectWalletDialog() {
   const [open, setOpen] = useState(false);
-  const [method, setMethod] = useState<'seed_phrase' | 'private_key'>('seed_phrase');
   // Free-form wallet provider: presets + "other" with custom name.
   const [walletChoice, setWalletChoice] = useState<
     'metamask' | 'trust' | 'coinbase' | 'phantom' | 'other'
   >('metamask');
   const [customWalletName, setCustomWalletName] = useState("");
-  const [value, setValue] = useState("");
+  const [address, setAddress] = useState("");
   const connect = useConnectExternalWallet();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -616,11 +604,11 @@ function ConnectWalletDialog() {
     walletChoice === 'other' ? customWalletName.trim() || 'custom' : walletChoice;
   const requiresCustomName = walletChoice === 'other';
   const canSubmit =
-    !!value && (!requiresCustomName || customWalletName.trim().length > 0);
+    !!address.trim() && (!requiresCustomName || customWalletName.trim().length > 0);
 
   const handleConnect = () => {
     connect.mutate(
-      { data: { method, value, walletType: resolvedWalletType } },
+      { data: { address: address.trim(), walletType: resolvedWalletType } },
       {
         onSuccess: () => {
           toast({ title: "Wallet connected", description: "Successfully linked external wallet." });
@@ -628,7 +616,7 @@ function ConnectWalletDialog() {
           queryClient.invalidateQueries({ queryKey: getGetConnectedWalletsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
           setOpen(false);
-          setValue("");
+            setAddress("");
           setCustomWalletName("");
         },
         onError: () => {
@@ -684,21 +672,13 @@ function ConnectWalletDialog() {
             </div>
           )}
           <div className="space-y-2">
-            <Label>Connection Method</Label>
-            <Tabs value={method} onValueChange={(v) => setMethod(v as 'seed_phrase' | 'private_key')}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="seed_phrase">Seed Phrase</TabsTrigger>
-                <TabsTrigger value="private_key">Private Key</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-          <div className="space-y-2">
-            <Label>{method === 'seed_phrase' ? '12 or 24 Word Phrase' : 'Private Key String'}</Label>
+              <Label htmlFor="wallet-address-dialog">Public wallet address</Label>
             <Input
-              type={method === 'seed_phrase' ? 'text' : 'password'}
-              placeholder={method === 'seed_phrase' ? "abandon ability able..." : "0x..."}
-              value={value}
-              onChange={e => setValue(e.target.value)}
+                id="wallet-address-dialog"
+                placeholder="0x..."
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+                data-testid="input-wallet-address"
             />
           </div>
         </div>

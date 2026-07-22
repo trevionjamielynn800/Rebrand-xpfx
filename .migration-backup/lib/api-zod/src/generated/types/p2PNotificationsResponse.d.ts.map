@@ -1,1 +1,0 @@
-{"version":3,"file":"p2PNotificationsResponse.d.ts","sourceRoot":"","sources":["p2PNotificationsResponse.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,mBAAmB,CAAC;AAEzD,MAAM,WAAW,wBAAwB;IACvC,aAAa,EAAE,eAAe,EAAE,CAAC;IACjC,+CAA+C;IAC/C,WAAW,EAAE,MAAM,CAAC;CACrB"}

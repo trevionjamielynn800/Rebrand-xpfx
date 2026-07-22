@@ -1,1 +1,0 @@
-{"version":3,"file":"coinbaseInitiateResponse.d.ts","sourceRoot":"","sources":["coinbaseInitiateResponse.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,MAAM,WAAW,wBAAwB;IACvC,GAAG,EAAE,MAAM,CAAC;IACZ,OAAO,EAAE,OAAO,CAAC;IACjB,MAAM,EAAE,OAAO,CAAC;IAChB,UAAU,EAAE,OAAO,CAAC;IACpB,UAAU,EAAE,OAAO,CAAC;IACpB,MAAM,CAAC,EAAE,MAAM,GAAG,IAAI,CAAC;CACxB"}

@@ -1,1 +1,0 @@
-{"version":3,"file":"adminTradeRow.d.ts","sourceRoot":"","sources":["adminTradeRow.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,SAAS,CAAC;AAErC,MAAM,MAAM,aAAa,GAAG,KAAK,GAAG;IAClC,MAAM,EAAE,MAAM,CAAC;IACf,QAAQ,EAAE,MAAM,CAAC;IACjB,SAAS,EAAE,MAAM,CAAC;CACnB,CAAC"}

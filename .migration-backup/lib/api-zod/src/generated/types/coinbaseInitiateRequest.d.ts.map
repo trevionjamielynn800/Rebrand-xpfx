@@ -1,1 +1,0 @@
-{"version":3,"file":"coinbaseInitiateRequest.d.ts","sourceRoot":"","sources":["coinbaseInitiateRequest.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,sCAAsC,EAAE,MAAM,0CAA0C,CAAC;AAEvG,MAAM,WAAW,uBAAuB;IACtC,WAAW,EAAE,MAAM,CAAC;IACpB,iBAAiB;IACjB,UAAU,EAAE,MAAM,CAAC;IACnB,YAAY,EAAE,MAAM,CAAC;IACrB,kBAAkB,EAAE,MAAM,CAAC;IAC3B,eAAe,EAAE,sCAAsC,CAAC;CACzD"}

@@ -33,14 +33,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ShieldCheck, Wallet, AlertTriangle, Building2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 type WalletChoice = "metamask" | "trust" | "coinbase" | "phantom" | "other";
-type ConnectMethod = "seed_phrase" | "private_key";
-
 export function ConnectWallet() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -60,16 +57,14 @@ export function ConnectWallet() {
 
   const [choice, setChoice] = useState<WalletChoice>("metamask");
   const [customName, setCustomName] = useState("");
-  const [method, setMethod] = useState<ConnectMethod>("seed_phrase");
-  const [secret, setSecret] = useState("");
+  const [address, setAddress] = useState("");
 
   // Exchange-wallet connect form state (separate from the self-custody form
   // above). Tile-based provider picker per spec.
   const [exchangeProvider, setExchangeProvider] = useState<
     "moonpay" | "coinbase" | null
   >(null);
-  const [exchangeMethod, setExchangeMethod] = useState<ConnectMethod>("seed_phrase");
-  const [exchangeSecret, setExchangeSecret] = useState("");
+  const [exchangeAddress, setExchangeAddress] = useState("");
   const moonpaySupported = availability?.moonpaySupported !== false;
   const moonpayReason = availability?.moonpayUnsupportedReason ?? null;
 
@@ -90,7 +85,7 @@ export function ConnectWallet() {
     choice === "other" ? customName.trim() || "custom" : choice;
 
   const canSubmit =
-    secret.trim().length > 0 &&
+    address.trim().length > 0 &&
     (choice !== "other" || customName.trim().length > 0) &&
     !connect.isPending;
 
@@ -98,7 +93,7 @@ export function ConnectWallet() {
     e.preventDefault();
     try {
       await connect.mutateAsync({
-        data: { method, value: secret, walletType: resolvedWalletType },
+        data: { address: address.trim(), walletType: resolvedWalletType },
       });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: getGetConnectedWalletsQueryKey() }),
@@ -118,13 +113,12 @@ export function ConnectWallet() {
 
   const handleConnectExchange = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!exchangeProvider || !exchangeSecret.trim()) return;
+    if (!exchangeProvider || !exchangeAddress.trim()) return;
     try {
       await connectExchange.mutateAsync({
         data: {
           provider: exchangeProvider,
-          method: exchangeMethod,
-          value: exchangeSecret,
+          address: exchangeAddress.trim(),
         },
       });
       await Promise.all([
@@ -224,33 +218,17 @@ export function ConnectWallet() {
               )}
 
               <div className="space-y-2">
-                <Label>Connection method</Label>
-                <Tabs value={method} onValueChange={(v) => setMethod(v as ConnectMethod)}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="seed_phrase">Seed phrase</TabsTrigger>
-                    <TabsTrigger value="private_key">Private key</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="secret">
-                  {method === "seed_phrase" ? "12 or 24 word phrase" : "Private key string"}
-                </Label>
+                <Label htmlFor="wallet-address">Public wallet address</Label>
                 <Input
-                  id="secret"
-                  type={method === "seed_phrase" ? "text" : "password"}
-                  placeholder={
-                    method === "seed_phrase" ? "abandon ability able..." : "0x..."
-                  }
-                  value={secret}
-                  onChange={(e) => setSecret(e.target.value)}
-                  data-testid="input-wallet-secret"
+                  id="wallet-address"
+                  placeholder="0x..."
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  data-testid="input-wallet-address"
                 />
                 <p className="text-xs text-muted-foreground flex items-start gap-1">
                   <ShieldCheck className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                  Credentials are used to read the wallet's balance and are
-                  never used to broadcast transactions without your approval.
+                  Use a public address only. Never enter a seed phrase or private key.
                 </p>
               </div>
 
@@ -357,41 +335,20 @@ export function ConnectWallet() {
               {exchangeProvider && (
                 <>
                   <div className="space-y-2">
-                    <Label>Connection method</Label>
-                    <Tabs
-                      value={exchangeMethod}
-                      onValueChange={(v) => setExchangeMethod(v as ConnectMethod)}
-                    >
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="seed_phrase">Seed phrase</TabsTrigger>
-                        <TabsTrigger value="private_key">Private key</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="exchangeSecret">
-                      {exchangeMethod === "seed_phrase"
-                        ? "12 or 24 word phrase"
-                        : "Private key"}
-                    </Label>
+                      <Label htmlFor="exchange-address">Public wallet address</Label>
                     <Input
-                      id="exchangeSecret"
-                      type={exchangeMethod === "seed_phrase" ? "text" : "password"}
-                      placeholder={
-                        exchangeMethod === "seed_phrase"
-                          ? "abandon ability able..."
-                          : "0x..."
-                      }
-                      value={exchangeSecret}
-                      onChange={(e) => setExchangeSecret(e.target.value)}
-                      data-testid="input-exchange-connect-secret"
+                        id="exchange-address"
+                        placeholder="0x..."
+                        value={exchangeAddress}
+                        onChange={(e) => setExchangeAddress(e.target.value)}
+                        data-testid="input-exchange-address"
                     />
                   </div>
                   <Button
                     type="submit"
                     className="w-full"
                     disabled={
-                      !exchangeSecret.trim() || connectExchange.isPending
+                        !exchangeAddress.trim() || connectExchange.isPending
                     }
                     data-testid="button-connect-exchange-wallet-page"
                   >

@@ -1,1 +1,0 @@
-{"version":3,"file":"liveChatResponse.d.ts","sourceRoot":"","sources":["liveChatResponse.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,mBAAmB,CAAC;AAEzD,MAAM,WAAW,gBAAgB;IAC/B,WAAW,EAAE,eAAe,CAAC;IAC7B,QAAQ,CAAC,EAAE,eAAe,GAAG,IAAI,CAAC;IAClC,SAAS,EAAE,OAAO,CAAC;CACpB"}

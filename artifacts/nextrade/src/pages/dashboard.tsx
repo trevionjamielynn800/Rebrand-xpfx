@@ -105,6 +105,25 @@ export function Dashboard() {
 
       <WalletRequiredBanner />
 
+      <Card className="border-primary/30 bg-primary/5" data-testid="card-smartvest-entry">
+        <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-primary" /> SmartVest
+            </CardTitle>
+            <CardDescription className="text-xs mt-1">
+              Track a simulated portfolio using your existing account balance.
+            </CardDescription>
+          </div>
+          <Link href="/smartvest">
+            <Button size="sm" variant="outline">Open portfolio <ArrowRight className="h-3 w-3 ml-1" /></Button>
+          </Link>
+        </CardHeader>
+        <CardContent className="pt-0 text-xs text-muted-foreground">
+          SmartVest is a simulated educational account, not a TFSA, FHSA, investment product, or registered account.
+        </CardContent>
+      </Card>
+
       {!hasVerifiedBank && (
         <Card className="border-amber-500/40 bg-amber-500/5" data-testid="card-fiat-bank-locked">
           <CardContent className="py-3 flex items-center gap-3">

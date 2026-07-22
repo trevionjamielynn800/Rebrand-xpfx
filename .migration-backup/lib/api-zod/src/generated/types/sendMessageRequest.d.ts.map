@@ -1,1 +1,0 @@
-{"version":3,"file":"sendMessageRequest.d.ts","sourceRoot":"","sources":["sendMessageRequest.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,yBAAyB,EAAE,MAAM,6BAA6B,CAAC;AAE7E,MAAM,WAAW,kBAAkB;IACjC,OAAO,EAAE,MAAM,CAAC;IAChB,OAAO,EAAE,yBAAyB,CAAC;IACnC,SAAS,CAAC,EAAE,MAAM,GAAG,IAAI,CAAC;CAC3B"}

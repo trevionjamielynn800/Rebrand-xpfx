@@ -1,1 +1,0 @@
-{"version":3,"file":"moonpayWebhookEvent.d.ts","sourceRoot":"","sources":["moonpayWebhookEvent.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,uBAAuB,EAAE,MAAM,2BAA2B,CAAC;AAEzE;;GAEG;AACH,MAAM,WAAW,mBAAmB;IAClC,yEAAyE;IACzE,IAAI,EAAE,MAAM,CAAC;IACb,sCAAsC;IACtC,IAAI,EAAE,uBAAuB,CAAC;CAC/B"}

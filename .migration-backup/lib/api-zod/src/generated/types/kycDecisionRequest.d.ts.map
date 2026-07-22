@@ -1,1 +1,0 @@
-{"version":3,"file":"kycDecisionRequest.d.ts","sourceRoot":"","sources":["kycDecisionRequest.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,0BAA0B,EAAE,MAAM,8BAA8B,CAAC;AAE/E,MAAM,WAAW,kBAAkB;IACjC,QAAQ,EAAE,0BAA0B,CAAC;IACrC,MAAM,CAAC,EAAE,MAAM,GAAG,IAAI,CAAC;CACxB"}

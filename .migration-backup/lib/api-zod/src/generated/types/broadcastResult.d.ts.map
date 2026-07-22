@@ -1,1 +1,0 @@
-{"version":3,"file":"broadcastResult.d.ts","sourceRoot":"","sources":["broadcastResult.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,mBAAmB,EAAE,MAAM,uBAAuB,CAAC;AAEjE,MAAM,WAAW,eAAe;IAC9B,UAAU,EAAE,MAAM,CAAC;IACnB,IAAI,CAAC,EAAE,mBAAmB,CAAC;IAC3B,sDAAsD;IACtD,OAAO,CAAC,EAAE,MAAM,CAAC;CAClB"}

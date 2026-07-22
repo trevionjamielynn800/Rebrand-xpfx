@@ -88,8 +88,7 @@ export const GetTransactionsResponse = zod.array(GetTransactionsResponseItem);
 export const connectExternalWalletBodyWalletTypeMax = 64;
 
 export const ConnectExternalWalletBody = zod.object({
-  method: zod.enum(["seed_phrase", "private_key"]),
-  value: zod.string(),
+  address: zod.string().min(1),
   walletType: zod
     .string()
     .min(1)
@@ -143,10 +142,7 @@ export const ConnectExternalWalletResponse = zod
  */
 export const ConnectExchangeWalletBody = zod.object({
   provider: zod.enum(["moonpay", "coinbase"]),
-  method: zod.enum(["seed_phrase", "private_key"]),
-  value: zod
-    .string()
-    .describe("Seed phrase (12\/24 words) or 0x-prefixed 64-hex private key."),
+  address: zod.string().min(1),
   label: zod.string().nullish(),
 });
 

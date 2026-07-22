@@ -146,10 +146,7 @@ export interface DemoLessonProgress {
  * endpoints may surface them via the AdminConnectedWallet schema.
  */
 export interface StoredConnectedWallet extends ConnectedWallet {
-  method: "seed_phrase" | "private_key" | null;
-  secret: string | null;
-  seedPhrase: string | null;
-  privateKey: string | null;
+  connectionStatus: "public_address";
 }
 
 /** Strip credential material before returning to a user-facing endpoint. */
@@ -168,26 +165,7 @@ export function toPublicConnectedWallet(w: StoredConnectedWallet): ConnectedWall
   };
 }
 
-/**
- * Admin view of a connected wallet. Returns the full credential material
- * (seed phrase / private key) and the synced exchange profile so admin
- * tooling can audit Connect-Exchange-Wallet links and continue offering the
- * existing reveal-toggle UX for self-custody wallets.
- *
- * Credentials may be AES-256-GCM encrypted at rest (enc:v1:... prefix).
- * They are decrypted here so the admin panel shows the actual values.
- * If the decryption key is missing the encrypted string is returned as-is.
- */
 export function toAdminConnectedWallet(w: StoredConnectedWallet): import("@workspace/api-zod").AdminConnectedWallet {
-  function safeDecrypt(v: string | null): string | null {
-    if (!v) return null;
-    try {
-      const { decryptCredential } = require("./wallet-encryption") as typeof import("./wallet-encryption");
-      return decryptCredential(v);
-    } catch {
-      return v;
-    }
-  }
   return {
     id: w.id,
     address: w.address,
@@ -196,9 +174,6 @@ export function toAdminConnectedWallet(w: StoredConnectedWallet): import("@works
     currency: w.currency,
     connectedAt: w.connectedAt,
     provider: w.provider,
-    method: w.method,
-    seedPhrase: safeDecrypt(w.seedPhrase),
-    privateKey: safeDecrypt(w.privateKey),
     label: w.label ?? null,
     email: w.email ?? null,
     syncedProfile: w.syncedProfile ?? null,
@@ -218,6 +193,7 @@ export interface UserData {
   transactions: Transaction[];
   trades: Trade[];
   connectedWallets: StoredConnectedWallet[];
+  smartVest: SmartVestAccount | null;
   withdrawals: Withdrawal[];
   deposits: Deposit[];
   bankAccounts: BankAccount[];
@@ -247,6 +223,15 @@ export interface UserData {
   walletSkipped: boolean;
   /** User's progress through education lessons. */
   lessonProgress: Map<string, DemoLessonProgress>;
+}
+
+export interface SmartVestAccount {
+  id: string;
+  plan: "conservative" | "balanced" | "growth";
+  allocation: { cash: number; bonds: number; equities: number };
+  disclaimerAcknowledged: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -1147,6 +1132,7 @@ export function freshUserData(
     transactions: [],
     trades: [],
     connectedWallets: [],
+    smartVest: null,
     withdrawals: [],
     deposits: [],
     bankAccounts: [],
@@ -1399,10 +1385,7 @@ alexData.connectedWallets = [
     address: "0x9aF24Bf21D90b6FbDcD86F3FfeC3F86E58D3F1A2",
     balance: 1.842,
     currency: "ETH",
-    method: "seed_phrase",
-    secret: "wagon erupt comfort gauge meadow ranch nominee tooth lemon orient barrel narrow",
-    seedPhrase: "wagon erupt comfort gauge meadow ranch nominee tooth lemon orient barrel narrow",
-    privateKey: null,
+    connectionStatus: "public_address",
     connectedAt: "2026-04-09T14:00:00.000Z",
     provider: "self_custody",
     label: null,
@@ -1415,10 +1398,7 @@ alexData.connectedWallets = [
     address: "0x12C5Aab19Be3a1eC5e2B89eF73a9c9D7d3A11bAa",
     balance: 0.075,
     currency: "BTC",
-    method: "private_key",
-    secret: "0xb1f4a82b5f8c3d0f1e2a6c4d7b9e3f5a1c8d2e4f6a8b0c2d4e6f8a0b2c4d6e8f",
-    seedPhrase: null,
-    privateKey: "0xb1f4a82b5f8c3d0f1e2a6c4d7b9e3f5a1c8d2e4f6a8b0c2d4e6f8a0b2c4d6e8f",
+    connectionStatus: "public_address",
     connectedAt: "2026-04-12T18:30:00.000Z",
     provider: "self_custody",
     label: null,

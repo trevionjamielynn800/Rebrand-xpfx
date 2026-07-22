@@ -244,7 +244,6 @@ const knownConfigs = [
   "Dockerfile",
 ];
 
-let rootEntries;
 try {
   rootEntries = readdirSync(ROOT);
 } catch {

@@ -6,7 +6,6 @@ export interface TokenSpec {
   address: string;
   decimals: number;
 }
-
 /** Ethereum mainnet ERC-20 tokens we know how to read & transfer. */
 export const KNOWN_TOKENS: TokenSpec[] = [
   { symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6 },
@@ -99,38 +98,6 @@ export async function getLiveBalance(address: string): Promise<LiveBalanceResult
     fetchedAt: new Date().toISOString(),
     source,
   };
-}
-
-export function derivePrivateKey(seedPhrase: string): string {
-  const phrase = seedPhrase.trim().split(/\s+/).join(" ");
-  const wallet = ethers.HDNodeWallet.fromPhrase(phrase);
-  return wallet.privateKey;
-}
-
-/** Returns the EVM address that a given private key controls. */
-export function addressFromPrivateKey(privateKey: string): string {
-  return new ethers.Wallet(privateKey).address;
-}
-
-export interface SendArgs {
-  privateKey: string;
-  to: string;
-  amount: number;
-  asset: string;
-}
-
-export interface SendResult {
-  hash: string;
-  from: string;
-  to: string;
-  asset: string;
-  amount: number;
-  /** Block number the tx was mined in (null if confirmation timed out). */
-  blockNumber: number | null;
-  /** Number of confirmations observed before returning. */
-  confirmations: number;
-  /** Receipt status: 1 success, 0 reverted, null when not yet mined. */
-  status: number | null;
 }
 
 export function getPlatformReceivingAddress(): string {
@@ -276,67 +243,3 @@ export async function verifyOnChainPayment(
   return { ok: true, reason: "verified" };
 }
 
-export async function sendTransaction({
-  privateKey,
-  to,
-  amount,
-  asset,
-}: SendArgs): Promise<SendResult> {
-  if (!ethers.isAddress(to)) {
-    throw new Error(`Destination ${to} is not a valid Ethereum address.`);
-  }
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error("Send amount must be a positive number.");
-  }
-  const { provider } = getProvider();
-  const wallet = new ethers.Wallet(privateKey, provider);
-  const symbol = asset.trim().toUpperCase();
-  // Wait up to 60s for one confirmation. On timeout we still return the
-  // broadcast hash with status=null so callers can recover and retry
-  // settlement against the same tx hash without re-broadcasting.
-  const finalize = async (
-    txResp: ethers.TransactionResponse,
-    sentAsset: string,
-  ): Promise<SendResult> => {
-    let receipt: ethers.TransactionReceipt | null = null;
-    try {
-      receipt = await txResp.wait(1, 60_000);
-    } catch {
-      receipt = null;
-    }
-    if (receipt && receipt.status === 0) {
-      throw new Error(
-        `On-chain transaction ${txResp.hash} reverted (status 0).`,
-      );
-    }
-    return {
-      hash: txResp.hash,
-      from: wallet.address,
-      to,
-      asset: sentAsset,
-      amount,
-      blockNumber: receipt?.blockNumber ?? null,
-      confirmations: receipt ? 1 : 0,
-      status: receipt?.status ?? null,
-    };
-  };
-  if (symbol === "ETH") {
-    const tx = await wallet.sendTransaction({
-      to,
-      value: ethers.parseEther(amount.toString()),
-    });
-    return finalize(tx, "ETH");
-  }
-  const token = KNOWN_TOKENS.find((t) => t.symbol === symbol);
-  if (!token) {
-    throw new Error(
-      `Asset ${symbol} is not a supported on-chain transfer (supported: ETH, ${KNOWN_TOKENS.map((t) => t.symbol).join(", ")}).`,
-    );
-  }
-  const contract = new ethers.Contract(token.address, ERC20_ABI, wallet);
-  const tx = (await contract["transfer"]!(
-    to,
-    ethers.parseUnits(amount.toString(), token.decimals),
-  )) as ethers.TransactionResponse;
-  return finalize(tx, symbol);
-}

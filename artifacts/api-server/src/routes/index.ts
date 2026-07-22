@@ -40,6 +40,7 @@ import authPinRouter from "./auth-pin";
 import adminDepositsRouter from "./admin-deposits";
 import educationRouter from "./education";
 import mentorshipRouter from "./mentorship";
+import smartVestRouter from "./smartvest";
 
 const router: IRouter = Router();
 
@@ -81,5 +82,6 @@ router.use(authPinRouter);
 router.use(adminDepositsRouter);
 router.use(educationRouter);
 router.use(mentorshipRouter);
+router.use(smartVestRouter);
 
 export default router;

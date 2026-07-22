@@ -1,1 +1,0 @@
-{"version":3,"file":"getAdminWithdrawalsParams.d.ts","sourceRoot":"","sources":["getAdminWithdrawalsParams.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,yBAAyB,EAAE,MAAM,6BAA6B,CAAC;AAE7E,MAAM,MAAM,yBAAyB,GAAG;IACtC,MAAM,CAAC,EAAE,yBAAyB,CAAC;CACpC,CAAC"}
