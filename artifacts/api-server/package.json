@@ -7,7 +7,7 @@
     "build": "node ./build.mjs",
     "typecheck": "tsc --noEmit",
     "start": "node --enable-source-maps dist/index.mjs",
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "postinstall": "prisma generate --schema=./prisma/schema.prisma || true",
     "test": "jest --forceExit --coverage",
     "audit": "npm audit --audit-level=high"
