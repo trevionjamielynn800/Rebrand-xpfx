@@ -32,6 +32,9 @@ Thumbs.db
 logs
 npm-debug.log*
 
+# Build and migration backups
+.migration-backup/
+
 # Testing
 coverage
 __tests__

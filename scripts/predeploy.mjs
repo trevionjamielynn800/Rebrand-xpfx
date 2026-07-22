@@ -187,6 +187,13 @@ if (foundPnpmLocks.length > 0) {
   );
 }
 
+if (rootEntries.includes(".migration-backup")) {
+  fail(
+    `Local migration backup directory found at repo root: .migration-backup/\n` +
+      `  Remove this directory and ensure it is gitignored before deploying.`
+  );
+}
+
 // Check for packageManager declarations in workspace manifests (enforce npm-only)
 for (const pkgPath of packageJsonFiles) {
   if (pkgPath === join(ROOT, "package.json")) continue; // root is allowed
