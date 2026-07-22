@@ -1,7 +1,7 @@
 {
   "provider": "node",
-  "install": "pnpm install --frozen-lockfile --no-audit --no-fund && pnpm run predeploy && pnpm run build --workspace artifacts/api-server && pnpm run build --workspace artifacts/nextrade && pnpm run build --workspace artifacts/admin-portal",
-  "build": "pnpm run predeploy && pnpm run build --workspace artifacts/api-server && pnpm run build --workspace artifacts/nextrade && pnpm run build --workspace artifacts/admin-portal",
+  "install": "npm install --no-audit --no-fund && npm run predeploy && npm run build --workspace=artifacts/api-server && npm run build --workspace=artifacts/nextrade && npm run build --workspace=artifacts/admin-portal",
+  "build": "npm run predeploy && npm run build --workspace=artifacts/api-server && npm run build --workspace=artifacts/nextrade && npm run build --workspace=artifacts/admin-portal",
   "start": "node --enable-source-maps artifacts/api-server/dist/index.mjs",
   "env": {
     "NODE_ENV": "production",
