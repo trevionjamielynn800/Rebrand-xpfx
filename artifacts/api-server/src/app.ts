@@ -9,8 +9,10 @@ import fs from 'fs';
 import path from 'path';
 import { randomBytes } from 'crypto';
 import client from 'prom-client';
+import { sql } from 'drizzle-orm';
 import apiRoutes from './routes/index';
 import { attachSession } from './lib/session';
+import { getDb } from './lib/db-client';
 
 const app = express();
 app.disable('x-powered-by');
@@ -214,6 +216,26 @@ app.get('/api/healthz', (_req: Request, res: Response) => {
 app.get('/api/livez', (_req: Request, res: Response) => {
   res.status(200).json(buildHealthPayload());
 });
+
+async function dbHealthHandler(_req: Request, res: Response) {
+  const db = getDb();
+  if (!db) {
+    return res.status(200).json({ status: 'ok', database: 'disabled' });
+  }
+
+  try {
+    await db.execute(sql`select 1`);
+    return res.status(200).json({ status: 'ok', database: 'connected' });
+  } catch (err) {
+    return res.status(503).json({
+      status: 'degraded',
+      database: 'unreachable',
+      error: (err as Error).message,
+    });
+  }
+}
+
+app.get('/healthz/db', dbHealthHandler);
 
 // Readiness probe: verifies DB connectivity when DATABASE_URL is configured.
 async function readinessHandler(_req: Request, res: Response) {
