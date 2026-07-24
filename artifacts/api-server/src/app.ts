@@ -244,6 +244,7 @@ async function readinessHandler(_req: Request, res: Response) {
     return res.status(200).json({ ready: true, reason: 'no-db-config' });
   }
   try {
+    process.env.PGSSLMODE = 'require';
     const { PrismaClient } = await import('@prisma/client');
     if (process.env.DATABASE_URL) {
       const postgresConfig = buildPostgresConfig(process.env.DATABASE_URL);

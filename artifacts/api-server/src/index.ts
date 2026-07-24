@@ -23,6 +23,26 @@ function normalizePort(value: string | number | undefined) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_PORT;
 }
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function retryAsync<T>(fn: () => Promise<T>, attempts = 5, delayMs = 3000): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < attempts) {
+        console.warn(`[DB] Connection attempt ${attempt} failed, retrying in ${delayMs}ms`, err);
+        await delay(delayMs);
+      }
+    }
+  }
+  throw lastError;
+}
+
 async function initDatabase() {
   if (!process.env.DATABASE_URL) {
     console.warn('[DB] DATABASE_URL not set — continuing without Prisma persistence');
@@ -30,13 +50,25 @@ async function initDatabase() {
   }
 
   try {
+    process.env.PGSSLMODE = 'require';
     const { PrismaClient } = await import('@prisma/client');
     if (process.env.DATABASE_URL) {
       const postgresConfig = buildPostgresConfig(process.env.DATABASE_URL);
       process.env.DATABASE_URL = postgresConfig.connectionString;
     }
-    const client = new PrismaClient();
-    await client.$connect();
+
+    async function createClient() {
+      const client = new PrismaClient();
+      try {
+        await client.$connect();
+        return client;
+      } catch (err) {
+        await client.$disconnect().catch(() => undefined);
+        throw err;
+      }
+    }
+
+    const client = await retryAsync(createClient, 5, 3000);
     console.log('[DB] PostgreSQL connected via Prisma');
     return client;
   } catch (error) {
