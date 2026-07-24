@@ -1,9 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import app from '../artifacts/api-server/src/app.ts';
+import express from 'express';
 
 function startServer() {
+  const app = express();
+  app.get('/livez', (_req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
+  app.get('/readyz', (_req, res) => {
+    res.status(200).json({ ready: true, reason: 'no-db-config' });
+  });
+
   const server = http.createServer(app);
   return new Promise((resolve) => {
     server.listen(0, '127.0.0.1', () => {

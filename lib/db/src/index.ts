@@ -5,7 +5,7 @@ import { buildPostgresConfig } from "./connection-config";
 
 const { Pool } = pg;
 
-const postgresConfig = buildPostgresConfig(process.env.DATABASE_URL);
+const postgresConfig = buildPostgresConfig();
 
 export const pool = new Pool({
   connectionString: postgresConfig.connectionString,

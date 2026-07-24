@@ -4,7 +4,8 @@ dotenv.config();
 
 import http from 'http';
 import app from './app';
-import { buildPostgresConfig } from '../../../lib/db/src/connection-config.ts';
+import { buildPostgresConfig, getRawDatabaseUrl } from '../../../lib/db/src/connection-config.ts';
+import { hydrateFromDb } from './lib/hydrate.ts';
 import { validateProductionEnvironment } from '../../../scripts/validate-production-env.mjs';
 
 type PrismaClientType = {
@@ -44,18 +45,17 @@ async function retryAsync<T>(fn: () => Promise<T>, attempts = 5, delayMs = 3000)
 }
 
 async function initDatabase() {
-  if (!process.env.DATABASE_URL) {
-    console.warn('[DB] DATABASE_URL not set — continuing without Prisma persistence');
+  const rawDatabaseUrl = getRawDatabaseUrl();
+  if (!rawDatabaseUrl) {
+    console.warn('[DB] DATABASE_URL and DATABASE_PUBLIC_URL not set — continuing without Prisma persistence');
     return null;
   }
 
   try {
     process.env.PGSSLMODE = 'require';
     const { PrismaClient } = await import('@prisma/client');
-    if (process.env.DATABASE_URL) {
-      const postgresConfig = buildPostgresConfig(process.env.DATABASE_URL);
-      process.env.DATABASE_URL = postgresConfig.connectionString;
-    }
+    const postgresConfig = buildPostgresConfig(rawDatabaseUrl);
+    process.env.DATABASE_URL = postgresConfig.connectionString;
 
     async function createClient() {
       const client = new PrismaClient();
@@ -81,6 +81,7 @@ async function bootstrap() {
   try {
     validateProductionEnvironment(process.env);
     prisma = await initDatabase();
+    await hydrateFromDb();
 
     const resolvedPort = normalizePort(process.env.PORT || PORT);
 

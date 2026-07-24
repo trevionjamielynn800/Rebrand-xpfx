@@ -14,8 +14,9 @@ function validateProductionEnvironment(env = process.env) {
       errors.push('WALLET_ENCRYPTION_KEY must be set to a 64-character hex key in production.');
     }
 
-    if (!env.DATABASE_URL || !env.DATABASE_URL.includes('postgres')) {
-      errors.push('DATABASE_URL must be set to a PostgreSQL connection string in production.');
+    const databaseUrl = env.DATABASE_URL?.trim() || env.DATABASE_PUBLIC_URL?.trim();
+    if (!databaseUrl || !databaseUrl.includes('postgres')) {
+      errors.push('DATABASE_URL or DATABASE_PUBLIC_URL must be set to a PostgreSQL connection string in production.');
     }
 
     if (!env.ALLOWED_ORIGINS && !env.REPLIT_DOMAINS) {

@@ -27,7 +27,7 @@ const REINIT_COOLDOWN_MS = 15_000; // don't hammer a dead DB on every request
 export function getDb(): DbClient | null {
   if (_db) return _db;
 
-  const url = process.env.DATABASE_URL;
+  const url = process.env.DATABASE_URL ?? process.env.DATABASE_PUBLIC_URL;
   if (!url) {
     if (!_warned) {
       logger.warn("[db] DATABASE_URL not set — DB persistence disabled");
@@ -45,11 +45,13 @@ export function getDb(): DbClient | null {
   _lastInitAttempt = now;
 
   try {
-    const postgresConfig = buildPostgresConfig(url);
+    const postgresConfig = buildPostgresConfig();
     const pool = new pg.Pool({
       max: 5,
       connectionString: postgresConfig.connectionString,
       ssl: postgresConfig.ssl,
+      connectionTimeoutMillis: 1500,
+      idleTimeoutMillis: 1000,
     });
 
     // Pool-level errors (e.g. connection dropped by the DB host) would

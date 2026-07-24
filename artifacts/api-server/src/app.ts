@@ -11,12 +11,81 @@ import { randomBytes } from 'crypto';
 import client from 'prom-client';
 import { sql } from 'drizzle-orm';
 import { buildPostgresConfig } from '../../../lib/db/src/connection-config.ts';
-import apiRoutes from './routes/index';
 import { attachSession } from './lib/session';
 import { getDb } from './lib/db-client';
 
 const app = express();
 app.disable('x-powered-by');
+
+function buildHealthPayload(extra: Record<string, unknown> = {}) {
+  return {
+    status: 'ok',
+    service: 'XpressPro FX API',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    ...extra
+  };
+}
+
+async function dbHealthHandler(_req: Request, res: Response) {
+  const db = getDb();
+  if (!db) {
+    return res.status(200).json({ status: 'ok', database: 'disabled' });
+  }
+
+  try {
+    await db.execute(sql`select 1`);
+    return res.status(200).json({ status: 'ok', database: 'connected' });
+  } catch (err) {
+    return res.status(503).json({
+      status: 'degraded',
+      database: 'unreachable',
+      error: (err as Error).message,
+    });
+  }
+}
+
+async function readinessHandler(_req: Request, res: Response) {
+  const rawDatabaseUrl = process.env.DATABASE_URL ?? process.env.DATABASE_PUBLIC_URL;
+  if (!rawDatabaseUrl) {
+    return res.status(200).json({ ready: true, reason: 'no-db-config' });
+  }
+
+  try {
+    const db = getDb();
+    if (!db) {
+      return res.status(200).json({ ready: true, reason: 'no-db-client' });
+    }
+
+    await db.execute(sql`select 1`);
+    return res.status(200).json({ ready: true, reason: 'database-ok' });
+  } catch (err) {
+    return res.status(503).json({ ready: false, error: String(err) });
+  }
+}
+
+app.get('/healthz', (_req: Request, res: Response) => {
+  res.status(200).json(buildHealthPayload({ checks: ['process'] }));
+});
+
+app.get('/livez', (_req: Request, res: Response) => {
+  res.status(200).json(buildHealthPayload({ checks: ['process'] }));
+});
+
+app.get('/api/healthz', (_req: Request, res: Response) => {
+  res.status(200).json(buildHealthPayload());
+});
+
+app.get('/api/livez', (_req: Request, res: Response) => {
+  res.status(200).json(buildHealthPayload());
+});
+
+app.get('/healthz/db', dbHealthHandler);
+app.get('/readyz', readinessHandler);
+app.get('/api/readyz', readinessHandler);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   const requestId = req.get('x-request-id') || randomBytes(8).toString('hex');
@@ -28,9 +97,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // ─── LOGGING ──────────────────────────────────────────────────────────────────
 app.use(pinoHttp({
   level: process.env.LOG_LEVEL || 'info',
-  transport: process.env.NODE_ENV !== 'production'
-    ? { target: 'pino-pretty' }
-    : undefined
+  transport: undefined,
 }));
 
 // ─── SECURITY HEADERS ─────────────────────────────────────────────────────────
@@ -188,80 +255,6 @@ app.use('/api/live-chat/', liveChatLimiter);
 // ─── TRUST PROXY ──────────────────────────────────────────────────────────────
 app.set('trust proxy', 1);
 
-// ─── HEALTH CHECKS ────────────────────────────────────────────────────────────
-function buildHealthPayload(extra: Record<string, unknown> = {}) {
-  return {
-    status: 'ok',
-    service: 'XpressPro FX API',
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    ...extra
-  };
-}
-
-app.get('/healthz', (_req: Request, res: Response) => {
-  res.status(200).json(buildHealthPayload({ checks: ['process'] }));
-});
-
-app.get('/livez', (_req: Request, res: Response) => {
-  res.status(200).json(buildHealthPayload({ checks: ['process'] }));
-});
-
-app.get('/api/healthz', (_req: Request, res: Response) => {
-  res.status(200).json(buildHealthPayload());
-});
-
-app.get('/api/livez', (_req: Request, res: Response) => {
-  res.status(200).json(buildHealthPayload());
-});
-
-async function dbHealthHandler(_req: Request, res: Response) {
-  const db = getDb();
-  if (!db) {
-    return res.status(200).json({ status: 'ok', database: 'disabled' });
-  }
-
-  try {
-    await db.execute(sql`select 1`);
-    return res.status(200).json({ status: 'ok', database: 'connected' });
-  } catch (err) {
-    return res.status(503).json({
-      status: 'degraded',
-      database: 'unreachable',
-      error: (err as Error).message,
-    });
-  }
-}
-
-app.get('/healthz/db', dbHealthHandler);
-
-// Readiness probe: verifies DB connectivity when DATABASE_URL is configured.
-async function readinessHandler(_req: Request, res: Response) {
-  if (!process.env.DATABASE_URL) {
-    return res.status(200).json({ ready: true, reason: 'no-db-config' });
-  }
-  try {
-    process.env.PGSSLMODE = 'require';
-    const { PrismaClient } = await import('@prisma/client');
-    if (process.env.DATABASE_URL) {
-      const postgresConfig = buildPostgresConfig(process.env.DATABASE_URL);
-      process.env.DATABASE_URL = postgresConfig.connectionString;
-    }
-    const client = new PrismaClient();
-    await client.$connect();
-    await client.$disconnect();
-    return res.status(200).json({ ready: true, reason: 'database-ok' });
-  } catch (err) {
-    return res.status(503).json({ ready: false, error: String(err) });
-  }
-}
-
-app.get('/readyz', readinessHandler);
-app.get('/api/readyz', readinessHandler);
-
 // ─── STATIC FILE SERVING ──────────────────────────────────────────────────────
 const candidateRoots = [
   process.cwd(),
@@ -317,7 +310,22 @@ app.use('/api/*', (req: Request, res: Response, next: NextFunction) => {
 });
 
 // ─── API ROUTES ───────────────────────────────────────────────────────────────
-app.use('/api', apiRoutes);
+let apiRoutesHandler: ((req: Request, res: Response, next: NextFunction) => void) | null = null;
+
+function mountApiRoutes(req: Request, res: Response, next: NextFunction) {
+  if (apiRoutesHandler) {
+    return apiRoutesHandler(req, res, next);
+  }
+
+  import('./routes/index')
+    .then(({ default: loadedApiRoutes }) => {
+      apiRoutesHandler = loadedApiRoutes as unknown as (req: Request, res: Response, next: NextFunction) => void;
+      return apiRoutesHandler(req, res, next);
+    })
+    .catch((err) => next(err));
+}
+
+app.use('/api', mountApiRoutes);
 
 // Ensure any unmatched API request (all methods) returns a JSON 404 instead
 // of Express's default HTML error page. This makes errors consistent for
