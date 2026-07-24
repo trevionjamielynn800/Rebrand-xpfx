@@ -16,10 +16,7 @@ export function buildPostgresConfig(
   const url = new URL(rawUrl);
   const params = url.searchParams;
 
-  const hasSslMode = params.has('sslmode');
-  if (!hasSslMode) {
-    params.set('sslmode', 'require');
-  }
+  params.set('sslmode', 'require');
 
   const ssl = {
     rejectUnauthorized: false,

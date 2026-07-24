@@ -12,12 +12,12 @@ test('adds Railway SSL settings for plain postgres URLs', () => {
   assert.deepEqual(config.ssl, { rejectUnauthorized: false });
 });
 
-test('preserves an existing sslmode when it is already configured', () => {
+test('overrides a disabled sslmode with Railway-compatible SSL', () => {
   const config = buildPostgresConfig('postgresql://user:pass@db.internal:5432/app?sslmode=disable', {
     RAILWAY_ENVIRONMENT_NAME: 'production',
   });
 
-  assert.equal(config.connectionString.includes('sslmode=disable'), true);
-  assert.equal(config.connectionString.includes('sslmode=require'), false);
+  assert.equal(config.connectionString.includes('sslmode=require'), true);
+  assert.equal(config.connectionString.includes('sslmode=disable'), false);
   assert.deepEqual(config.ssl, { rejectUnauthorized: false });
 });
