@@ -10,6 +10,7 @@ import path from 'path';
 import { randomBytes } from 'crypto';
 import client from 'prom-client';
 import { sql } from 'drizzle-orm';
+import { buildPostgresConfig } from '../../../lib/db/src/connection-config.ts';
 import apiRoutes from './routes/index';
 import { attachSession } from './lib/session';
 import { getDb } from './lib/db-client';
@@ -244,6 +245,10 @@ async function readinessHandler(_req: Request, res: Response) {
   }
   try {
     const { PrismaClient } = await import('@prisma/client');
+    if (process.env.DATABASE_URL) {
+      const postgresConfig = buildPostgresConfig(process.env.DATABASE_URL);
+      process.env.DATABASE_URL = postgresConfig.connectionString;
+    }
     const client = new PrismaClient();
     await client.$connect();
     await client.$disconnect();

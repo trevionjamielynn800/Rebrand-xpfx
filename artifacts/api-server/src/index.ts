@@ -4,6 +4,7 @@ dotenv.config();
 
 import http from 'http';
 import app from './app';
+import { buildPostgresConfig } from '../../../lib/db/src/connection-config.ts';
 import { validateProductionEnvironment } from '../../../scripts/validate-production-env.mjs';
 
 type PrismaClientType = {
@@ -30,6 +31,10 @@ async function initDatabase() {
 
   try {
     const { PrismaClient } = await import('@prisma/client');
+    if (process.env.DATABASE_URL) {
+      const postgresConfig = buildPostgresConfig(process.env.DATABASE_URL);
+      process.env.DATABASE_URL = postgresConfig.connectionString;
+    }
     const client = new PrismaClient();
     await client.$connect();
     console.log('[DB] PostgreSQL connected via Prisma');
