@@ -14,6 +14,7 @@
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@workspace/db/schema";
+import { buildPostgresConfig } from "../../../../lib/db/src/connection-config";
 import { logger } from "./logger";
 
 export type DbClient = ReturnType<typeof drizzle<typeof schema>>;
@@ -44,7 +45,12 @@ export function getDb(): DbClient | null {
   _lastInitAttempt = now;
 
   try {
-    const pool = new pg.Pool({ max: 5, connectionString: url });
+    const postgresConfig = buildPostgresConfig(url);
+    const pool = new pg.Pool({
+      max: 5,
+      connectionString: postgresConfig.connectionString,
+      ssl: postgresConfig.ssl,
+    });
 
     // Pool-level errors (e.g. connection dropped by the DB host) would
     // otherwise surface as an unhandled 'error' event and crash the process.
